@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -18,11 +19,28 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
           pip install build twine
+
+      - name: Extract version from tag
+        if: startsWith(github.ref, 'refs/tags/')
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
 
       - name: Build package
         run: python -m build
@@ -30,10 +48,27 @@ jobs:
       - name: Check package
         run: twine check dist/*
 
+      - name: Display package info
+        run: |
+          echo "Built packages:"
+          ls -lh dist/
+          echo ""
+          echo "Package contents:"
+          for file in dist/*.whl dist/*.tar.gz; do
+            echo "=== $file ==="
+            if [[ "$file" == *.whl ]]; then
+              unzip -l "$file" | head -20
+            else
+              tar -tzf "$file" | head -20
+            fi
+            echo ""
+          done
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: dist-packages
           path: dist/
           retention-days: 30
+          if-no-files-found: error
 

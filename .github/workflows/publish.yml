@@ -8,6 +8,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       id-token: write  # 用于 PyPI trusted publishing
@@ -20,11 +21,34 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-build-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-build-
 
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
           pip install build twine
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            # Extract version from pyproject.toml using grep/sed
+            VERSION=$(grep -E '^version\s*=' pyproject.toml | sed -E "s/^version\s*=\s*['\"](.*)['\"]/\1/")
+            VERSION="v$VERSION"
+          fi
+          VERSION_CLEAN=${VERSION#v}
+          echo "version=$VERSION_CLEAN" >> $GITHUB_OUTPUT
+          echo "Publishing version: $VERSION_CLEAN"
 
       - name: Build package
         run: python -m build
@@ -32,9 +56,30 @@ jobs:
       - name: Check package
         run: twine check dist/*
 
+      - name: Verify package version
+        run: |
+          EXPECTED_VERSION="${{ steps.version.outputs.version }}"
+          echo "Expected version: $EXPECTED_VERSION"
+          for file in dist/*.whl dist/*.tar.gz; do
+            if [[ "$file" == *"$EXPECTED_VERSION"* ]]; then
+              echo "✓ $file contains correct version"
+            else
+              echo "✗ $file version mismatch!"
+              exit 1
+            fi
+          done
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           print-hash: true
           packages-dir: dist/
+
+      - name: Verify publication
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "Waiting for PyPI to update..."
+          sleep 10
+          echo "Checking if package is available on PyPI..."
+          pip index versions remotable-function 2>/dev/null || echo "Package may take a few minutes to appear on PyPI"
 
