@@ -52,10 +52,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/remotable"
-Documentation = "https://github.com/yourusername/remotable/blob/main/README.md"
-Repository = "https://github.com/yourusername/remotable"
-Issues = "https://github.com/yourusername/remotable/issues"
+Homepage = "https://github.com/StarAniseStudio/remotable"
+Documentation = "https://github.com/StarAniseStudio/remotable/blob/main/README.md"
+Repository = "https://github.com/StarAniseStudio/remotable"
+Issues = "https://github.com/StarAniseStudio/remotable/issues"
 
 [tool.setuptools]
 packages = ["remotable", "remotable.core", "remotable.server", "remotable.client", "remotable.client.tools"]
