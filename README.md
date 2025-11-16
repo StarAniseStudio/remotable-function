@@ -1,4 +1,4 @@
-# Remotable
+# Remotable Function
 
 **轻量级 RPC 通信组件 - 让服务器调用客户端工具像本地函数一样简单**
 
@@ -9,7 +9,7 @@
 
 ## 这是什么？
 
-Remotable 是一个**纯粹的 RPC 通信组件**，解决一个核心问题：
+Remotable Function 是一个**纯粹的 RPC 通信组件**，解决一个核心问题：
 
 > 如何让服务器端代码方便地调用客户端工具？
 
@@ -30,17 +30,17 @@ Remotable 是一个**纯粹的 RPC 通信组件**，解决一个核心问题：
 
 ### 定位
 
-**Remotable 是：**
+**Remotable Function 是：**
 - ✅ RPC 通信组件（WebSocket + JSON-RPC 2.0）
 - ✅ 工具调用框架（服务器调用客户端工具）
 - ✅ Unity Netcode 风格（单包，身份配置）
 
-**Remotable 不是：**
+**Remotable Function 不是：**
 - ❌ AI Agent 框架（不包含 LLM、任务规划）
 - ❌ Web 应用（不包含前端 UI）
 - ❌ 完整的开发平台
 
-**Remotable 是通信层，需要在此基础上构建你的应用。**
+**Remotable Function 是通信层，需要在此基础上构建你的应用。**
 
 ---
 
@@ -388,7 +388,7 @@ async def get_info(client_id):
 
 ### 1. 保持简单
 
-Remotable 只做一件事：**让服务器调用客户端工具**
+Remotable Function 只做一件事：**让服务器调用客户端工具**
 
 不包含：
 - ❌ AI/LLM 功能
@@ -413,13 +413,13 @@ Remotable 只做一件事：**让服务器调用客户端工具**
 
 ## 常见问题
 
-**Q: Remotable 包含 AI Agent 吗？**
+**Q: Remotable Function 包含 AI Agent 吗？**
 
-A: 不包含。Remotable 只是 RPC 通信组件。需要自己集成 LLM（参考 `agent_demo/`）。
+A: 不包含。Remotable Function 只是 RPC 通信组件。需要自己集成 LLM（参考 `agent_demo/`）。
 
 **Q: 需要 Web 前端吗？**
 
-A: 不需要。Remotable 是纯后端组件，不涉及 UI。
+A: 不需要。Remotable Function 是纯后端组件，不涉及 UI。
 
 **Q: 如何添加认证？**
 
@@ -465,4 +465,4 @@ MIT License - 详见 [LICENSE](LICENSE)
 
 ---
 
-**Remotable - 让远程工具调用像本地函数一样简单** 🚀
+**Remotable Function - 让远程工具调用像本地函数一样简单** 🚀

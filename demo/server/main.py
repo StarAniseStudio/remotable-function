@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Remotable Server Demo - Enhanced UI Version
+Remotable Function Server Demo - Enhanced UI Version
 
 这是一个增强版的服务器demo，使用 rich 库提供更美观的命令行输出。
 """
@@ -47,7 +47,7 @@ async def main():
     # Print banner
     console.clear()
     console.print(Panel.fit(
-        "[bold magenta]Remotable Server Demo[/bold magenta]\n"
+        "[bold magenta]Remotable Function Server Demo[/bold magenta]\n"
         "[dim]Unity Netcode Style RPC Gateway[/dim]",
         border_style="magenta",
         box=box.DOUBLE
@@ -212,7 +212,7 @@ async def demo_tool_calls_enhanced(gateway, client_id: str):
         try:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             server_content = f"""{'=' * 60}
-Remotable Demo - 服务器远程创建的文件
+Remotable Function Demo - 服务器远程创建的文件
 {'=' * 60}
 
 这个文件由服务器远程创建！
@@ -222,7 +222,7 @@ Remotable Demo - 服务器远程创建的文件
   - 客户端ID: {client_id}
   - 操作类型: 远程文件写入
 
-这证明了 Remotable 的核心功能：
+这证明了 Remotable Function 的核心功能：
 服务器端代码可以在客户端机器上创建和修改文件！
 
 {'=' * 60}

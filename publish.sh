@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Remotable 发布脚本
+# Remotable Function 发布脚本
 # 使用方法: ./publish.sh [testpypi|pypi]
 
 set -e
@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo -e "${GREEN}================================${NC}"
-echo -e "${GREEN}Remotable 发布脚本${NC}"
+echo -e "${GREEN}Remotable Function 发布脚本${NC}"
 echo -e "${GREEN}================================${NC}"
 echo ""
 
@@ -77,7 +77,7 @@ if [ "$TARGET" = "testpypi" ]; then
     echo -e "${GREEN}✓ 上传成功！${NC}"
     echo ""
     echo -e "${GREEN}安装测试命令:${NC}"
-    echo "  pip install --index-url https://test.pypi.org/simple/ --no-deps remotable"
+    echo "  pip install --index-url https://test.pypi.org/simple/ --no-deps remotable-function"
 
 else
     echo -e "${RED}目标: PyPI (https://pypi.org) - 正式发布！${NC}"
@@ -99,7 +99,7 @@ else
     echo -e "${GREEN}✓ 上传成功！${NC}"
     echo ""
     echo -e "${GREEN}安装命令:${NC}"
-    echo "  pip install remotable"
+    echo "  pip install remotable-function"
 fi
 
 echo ""

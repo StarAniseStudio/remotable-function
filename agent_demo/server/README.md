@@ -1,11 +1,11 @@
 # Server 端 - AI Agent + Gateway
 
-服务器端程序，运行 AI Agent 和 Remotable Gateway。
+服务器端程序，运行 AI Agent 和 Remotable Function Gateway。
 
 ## 职责
 
 1. **AI Agent** - 处理用户请求，理解意图，调用远程工具
-2. **Remotable Gateway** - 管理客户端连接，路由工具调用
+2. **Remotable Function Gateway** - 管理客户端连接，路由工具调用
 3. **交互界面** - 提供命令行界面与用户交互
 
 ## 文件说明
@@ -14,7 +14,7 @@
 server/
 ├── main.py              # 主程序（启动 Gateway 和 Agent）
 ├── agent.py             # AI Agent（支持 LLM 和简单模式）
-├── remotable_tools.py   # Remotable 工具适配器
+├── remotable_tools.py   # Remotable Function 工具适配器
 ├── requirements.txt     # 依赖
 ├── start.sh             # 启动脚本
 └── .env.example         # 环境变量模板
@@ -153,4 +153,4 @@ instructions=[
 
 - [../README.md](../README.md) - 项目总览
 - [../client/README.md](../client/README.md) - 客户端文档
-- [../../README.md](../../README.md) - Remotable 文档
+- [../../README.md](../../README.md) - Remotable Function 文档

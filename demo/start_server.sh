@@ -1,5 +1,5 @@
 #!/bin/bash
-# Remotable Demo - 服务器启动脚本
+# Remotable Function Demo - 服务器启动脚本
 
 set -e
 
@@ -13,7 +13,7 @@ NC='\033[0m'
 clear
 
 echo "=========================================="
-echo "Remotable Server"
+echo "Remotable Function Server"
 echo "=========================================="
 echo ""
 

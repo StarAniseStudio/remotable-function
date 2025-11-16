@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Remotable AI Agent Server
+Remotable Function AI Agent Server
 
 服务器端主程序：
-- 启动 Remotable Gateway（管理客户端连接）
+- 启动 Remotable Function Gateway（管理客户端连接）
 - 启动 AI Agent（处理用户请求）
 - 提供交互界面
 """
@@ -63,7 +63,7 @@ async def main():
     # Print banner
     console.print()
     console.print(Panel.fit(
-        "[bold magenta]Remotable AI Agent Server[/bold magenta]\n"
+        "[bold magenta]Remotable Function AI Agent Server[/bold magenta]\n"
         "[dim]Agent + Gateway 一体化服务[/dim]",
         border_style="magenta",
         box=box.DOUBLE
@@ -77,7 +77,7 @@ async def main():
         console.print("[dim]将使用简化模式（基于关键词匹配）[/dim]\n")
 
     # Create Gateway
-    console.print("[bold yellow]🚀 创建 Remotable Gateway[/bold yellow]")
+    console.print("[bold yellow]🚀 创建 Remotable Function Gateway[/bold yellow]")
     gateway = remotable.Gateway(
         host="0.0.0.0",
         port=8000,

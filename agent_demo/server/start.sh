@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 echo ""
 echo "=========================================="
-echo -e "${MAGENTA}Remotable AI Agent Server${NC}"
+echo -e "${MAGENTA}Remotable Function AI Agent Server${NC}"
 echo "=========================================="
 echo ""
 

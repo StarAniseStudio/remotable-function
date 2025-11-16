@@ -1,5 +1,5 @@
 """
-Setup script for Remotable.
+Setup script for Remotable Function.
 Note: This file is kept for compatibility. Use pyproject.toml for configuration.
 """
 

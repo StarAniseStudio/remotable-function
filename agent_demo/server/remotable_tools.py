@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Remotable Tools Adapter for Agno
+Remotable Function Tools Adapter for Agno
 
-这个模块将 Remotable 的远程工具适配为 Agno Agent 可以使用的工具。
+这个模块将 Remotable Function 的远程工具适配为 Agno Agent 可以使用的工具。
 """
 
 import asyncio
@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 
 class RemotableTools:
     """
-    Remotable 工具适配器
+    Remotable Function 工具适配器
 
-    将 Remotable Gateway 的远程工具暴露给 Agno Agent。
+    将 Remotable Function Gateway 的远程工具暴露给 Agno Agent。
     """
 
     def __init__(
@@ -34,7 +34,7 @@ class RemotableTools:
         timeout: int = 30
     ):
         """
-        初始化 Remotable 工具适配器
+        初始化 Remotable Function 工具适配器
 
         Args:
             gateway: Gateway 实例（直接传入）
@@ -53,7 +53,7 @@ class RemotableTools:
             # Agent 通过 HTTP/WebSocket 与 Gateway 通信
             # 所以我们创建一个轻量级的 Gateway 客户端
             self._initialized = True
-            logger.info(f"Remotable Tools initialized for client: {self.client_id}")
+            logger.info(f"Remotable Function Tools initialized for client: {self.client_id}")
 
     def _get_gateway(self) -> remotable.Gateway:
         """获取 Gateway 实例（需要外部传入或创建）"""

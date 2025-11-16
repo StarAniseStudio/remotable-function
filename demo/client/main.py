@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Remotable Client Demo - Enhanced UI Version
+Remotable Function Client Demo - Enhanced UI Version
 
 这是一个增强版的客户端demo，使用 rich 库提供更美观的命令行输出。
 """
@@ -137,7 +137,7 @@ async def main():
     # Print banner
     console.clear()
     console.print(Panel.fit(
-        "[bold cyan]Remotable Client Demo[/bold cyan]\n"
+        "[bold cyan]Remotable Function Client Demo[/bold cyan]\n"
         "[dim]Unity Netcode Style RPC Framework[/dim]",
         border_style="cyan",
         box=box.DOUBLE
@@ -272,7 +272,7 @@ async def prepare_test_file():
 
         # Always write the file to ensure it exists
         test_file.write_text(f"""{'=' * 60}
-Remotable Demo - 客户端初始数据
+Remotable Function Demo - 客户端初始数据
 {'=' * 60}
 
 这个文件由客户端创建，服务器将远程读取和修改它。
@@ -289,9 +289,9 @@ Remotable Demo - 客户端初始数据
 
         # Create README
         readme_file = test_dir / "README.md"
-        readme_file.write_text(f"""# Remotable Demo Test Files
+        readme_file.write_text(f"""# Remotable Function Demo Test Files
 
-这个目录包含 Remotable 演示的测试文件。
+这个目录包含 Remotable Function 演示的测试文件。
 
 ## 📁 文件说明
 

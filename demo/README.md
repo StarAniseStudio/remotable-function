@@ -1,6 +1,6 @@
-# Remotable Demo
+# Remotable Function Demo
 
-展示 Remotable 核心功能的基础示例：服务器通过 RPC 调用客户端工具。
+展示 Remotable Function 核心功能的基础示例：服务器通过 RPC 调用客户端工具。
 
 ## 架构
 

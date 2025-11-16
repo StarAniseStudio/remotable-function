@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Remotable Client for AI Agent Demo
+Remotable Function Client for AI Agent Demo
 
 这个客户端提供工具给 AI Agent 使用。
 """
@@ -119,7 +119,7 @@ async def main():
     # Print banner
     console.clear()
     console.print(Panel.fit(
-        "[bold green]Remotable Client - Tool Provider[/bold green]\n"
+        "[bold green]Remotable Function Client - Tool Provider[/bold green]\n"
         "[dim]为 AI Agent 提供远程工具[/dim]",
         border_style="green",
         box=box.DOUBLE

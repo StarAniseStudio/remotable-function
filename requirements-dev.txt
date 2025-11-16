@@ -1,4 +1,4 @@
-# Remotable - Development Dependencies
+# Remotable Function - Development Dependencies
 #
 # Install with: pip install -r requirements-dev.txt
 

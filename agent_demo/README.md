@@ -1,6 +1,6 @@
-# Remotable Agent Demo
+# Remotable Function Agent Demo
 
-将 **Remotable** 与 **Agno** AI Agent 框架结合使用的演示项目。
+将 **Remotable Function** 与 **Agno** AI Agent 框架结合使用的演示项目。
 
 ## 架构
 
@@ -14,7 +14,7 @@
 │  │  - 调用远程工具              │   │
 │  └─────────────────────────────┘   │
 │  ┌─────────────────────────────┐   │
-│  │  Remotable Gateway          │   │
+│  │  Remotable Function Gateway │   │
 │  │  - 管理客户端连接            │   │
 │  │  - 路由工具调用              │   │
 │  └─────────────────────────────┘   │
@@ -26,7 +26,7 @@
 │  Client 端（本地机器）                │
 │                                     │
 │  ┌─────────────────────────────┐   │
-│  │  Remotable Client           │   │
+│  │  Remotable Function Client  │   │
 │  │  - 连接到 Gateway            │   │
 │  │  - 提供本地工具              │   │
 │  └─────────────────────────────┘   │
@@ -168,7 +168,7 @@ User: 获取客户端的系统信息
 
 - [server/README.md](server/README.md) - 服务器端详细文档
 - [client/README.md](client/README.md) - 客户端详细文档
-- [../README.md](../README.md) - Remotable 核心文档
+- [../README.md](../README.md) - Remotable Function 核心文档
 
 ## 安全提示
 

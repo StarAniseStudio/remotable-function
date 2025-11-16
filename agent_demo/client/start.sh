@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 echo ""
 echo "=========================================="
-echo -e "${CYAN}Remotable Client - 工具提供者${NC}"
+echo -e "${CYAN}Remotable Function Client - 工具提供者${NC}"
 echo "=========================================="
 echo ""
 

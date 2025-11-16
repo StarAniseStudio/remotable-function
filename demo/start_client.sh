@@ -1,5 +1,5 @@
 #!/bin/bash
-# Remotable Demo - 客户端启动脚本
+# Remotable Function Demo - 客户端启动脚本
 
 set -e
 
@@ -12,7 +12,7 @@ NC='\033[0m'
 clear
 
 echo "=========================================="
-echo "Remotable Client"
+echo "Remotable Function Client"
 echo "=========================================="
 echo ""
 

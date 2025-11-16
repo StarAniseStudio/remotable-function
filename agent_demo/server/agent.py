@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Remotable AI Agent
+Remotable Function AI Agent
 
 支持两种模式：
 1. LLM 模式 - 使用 Agno + OpenAI（需要 API Key）
@@ -16,7 +16,7 @@ from remotable_tools import RemotableTools
 
 class RemotableAgent:
     """
-    Remotable AI Agent
+    Remotable Function AI Agent
 
     可以使用 LLM 或简单规则处理用户请求
     """
@@ -31,7 +31,7 @@ class RemotableAgent:
         初始化 Agent
 
         Args:
-            gateway: Remotable Gateway 实例
+            gateway: Remotable Function Gateway 实例
             client_id: 目标客户端 ID
             use_llm: 是否使用 LLM（需要 OPENAI_API_KEY）
         """

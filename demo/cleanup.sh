@@ -1,5 +1,5 @@
 #!/bin/bash
-# Remotable Demo - 清理脚本
+# Remotable Function Demo - 清理脚本
 
 # 颜色定义
 GREEN='\033[0;32m'
