@@ -10,6 +10,7 @@ import json
 
 class RPCErrorCode(IntEnum):
     """JSON-RPC 2.0 Error Codes"""
+
     # Standard JSON-RPC errors
     PARSE_ERROR = -32700
     INVALID_REQUEST = -32600
@@ -31,31 +32,26 @@ class RPCErrorCode(IntEnum):
 @dataclass
 class RPCError:
     """RPC Error"""
+
     code: int
     message: str
     data: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        result = {
-            "code": self.code,
-            "message": self.message
-        }
+        result = {"code": self.code, "message": self.message}
         if self.data:
             result["data"] = self.data
         return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "RPCError":
-        return cls(
-            code=data["code"],
-            message=data["message"],
-            data=data.get("data")
-        )
+        return cls(code=data["code"], message=data["message"], data=data.get("data"))
 
 
 @dataclass
 class RPCRequest:
     """RPC Request"""
+
     jsonrpc: str = "2.0"
     id: Optional[str] = None
     method: str = ""
@@ -66,11 +62,7 @@ class RPCRequest:
             self.params = {}
 
     def to_dict(self) -> Dict[str, Any]:
-        result = {
-            "jsonrpc": self.jsonrpc,
-            "method": self.method,
-            "params": self.params
-        }
+        result = {"jsonrpc": self.jsonrpc, "method": self.method, "params": self.params}
         if self.id is not None:
             result["id"] = self.id
         return result
@@ -84,7 +76,7 @@ class RPCRequest:
             jsonrpc=data.get("jsonrpc", "2.0"),
             id=data.get("id"),
             method=data["method"],
-            params=data.get("params", {})
+            params=data.get("params", {}),
         )
 
     @classmethod
@@ -96,16 +88,14 @@ class RPCRequest:
 @dataclass
 class RPCResponse:
     """RPC Response"""
+
     jsonrpc: str = "2.0"
     id: Optional[str] = None
     result: Optional[Any] = None
     error: Optional[RPCError] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        response = {
-            "jsonrpc": self.jsonrpc,
-            "id": self.id
-        }
+        response = {"jsonrpc": self.jsonrpc, "id": self.id}
 
         if self.error:
             response["error"] = self.error.to_dict()
@@ -127,7 +117,7 @@ class RPCResponse:
             jsonrpc=data.get("jsonrpc", "2.0"),
             id=data.get("id"),
             result=data.get("result"),
-            error=error
+            error=error,
         )
 
     @classmethod
@@ -141,12 +131,11 @@ class RPCResponse:
         return cls(id=request_id, result=result)
 
     @classmethod
-    def error(cls, request_id: Optional[str], code: int, message: str, data: Optional[Dict] = None) -> "RPCResponse":
+    def error(
+        cls, request_id: Optional[str], code: int, message: str, data: Optional[Dict] = None
+    ) -> "RPCResponse":
         """Create error response"""
-        return cls(
-            id=request_id,
-            error=RPCError(code=code, message=message, data=data)
-        )
+        return cls(id=request_id, error=RPCError(code=code, message=message, data=data))
 
 
 def validate_rpc_request(data: Dict[str, Any]) -> tuple[bool, Optional[str]]:

@@ -133,7 +133,7 @@ class Tool(ABC):
             permissions=self.permissions,
             tags=self.tags,
             examples=self.examples,
-            timeout=self.timeout
+            timeout=self.timeout,
         )
 
     async def __call__(self, context: ToolContext, **kwargs) -> Any:

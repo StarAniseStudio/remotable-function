@@ -11,6 +11,7 @@ from enum import Enum
 
 class ParameterType(str, Enum):
     """Parameter types for tool definitions"""
+
     STRING = "string"
     INTEGER = "integer"
     NUMBER = "number"
@@ -22,6 +23,7 @@ class ParameterType(str, Enum):
 @dataclass
 class ParameterSchema:
     """Tool parameter schema definition"""
+
     name: str
     type: ParameterType
     description: str
@@ -77,6 +79,7 @@ class ParameterSchema:
 @dataclass
 class ToolExample:
     """Example usage of a tool"""
+
     description: str
     args: Dict[str, Any]
     expected_result: Optional[Dict[str, Any]] = None
@@ -94,6 +97,7 @@ class ToolExample:
 @dataclass
 class ToolDefinition:
     """Tool definition (used for registration and discovery)"""
+
     name: str
     description: str
     namespace: str = "default"
@@ -136,10 +140,7 @@ class ToolDefinition:
             name=name,
             description=data["description"],
             namespace=namespace,
-            parameters=[
-                ParameterSchema.from_dict(p)
-                for p in data.get("parameters", [])
-            ],
+            parameters=[ParameterSchema.from_dict(p) for p in data.get("parameters", [])],
             permissions=data.get("permissions", []),
             tags=data.get("tags", []),
             examples=[
@@ -157,6 +158,7 @@ class ToolDefinition:
 @dataclass
 class ClientInfo:
     """Client information (sent during registration)"""
+
     client_id: str
     name: str
     version: str
@@ -184,6 +186,7 @@ class ClientInfo:
 @dataclass
 class ToolContext:
     """Context information passed to tool execution"""
+
     client_id: str
     request_id: str
     timestamp: float
@@ -197,6 +200,7 @@ class ToolContext:
 # Connection states
 class ConnectionState(str, Enum):
     """Connection state enumeration"""
+
     DISCONNECTED = "disconnected"
     CONNECTING = "connecting"
     CONNECTED = "connected"
@@ -207,6 +211,7 @@ class ConnectionState(str, Enum):
 # Tool execution states
 class ToolExecutionState(str, Enum):
     """Tool execution state"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"

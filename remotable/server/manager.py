@@ -19,12 +19,7 @@ logger = logging.getLogger(__name__)
 class ClientConnection:
     """Represents a single client connection."""
 
-    def __init__(
-        self,
-        client_id: str,
-        websocket: WebSocketServerProtocol,
-        client_info: ClientInfo
-    ):
+    def __init__(self, client_id: str, websocket: WebSocketServerProtocol, client_info: ClientInfo):
         self.client_id = client_id
         self.websocket = websocket
         self.client_info = client_info
@@ -71,11 +66,7 @@ class ConnectionManager:
     - Message routing
     """
 
-    def __init__(
-        self,
-        heartbeat_interval: int = 30,
-        heartbeat_timeout: int = 60
-    ):
+    def __init__(self, heartbeat_interval: int = 30, heartbeat_timeout: int = 60):
         self.connections: Dict[str, ClientConnection] = {}
         self.heartbeat_interval = heartbeat_interval
         self.heartbeat_timeout = heartbeat_timeout
@@ -106,10 +97,7 @@ class ConnectionManager:
                     logger.error(f"Error in {event} callback: {e}")
 
     async def register(
-        self,
-        client_id: str,
-        websocket: WebSocketServerProtocol,
-        client_info: ClientInfo
+        self, client_id: str, websocket: WebSocketServerProtocol, client_info: ClientInfo
     ) -> ClientConnection:
         """Register a new client connection."""
         # Close existing connection if any
@@ -190,7 +178,9 @@ class ConnectionManager:
             return
 
         self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
-        logger.info(f"Heartbeat started (interval={self.heartbeat_interval}s, timeout={self.heartbeat_timeout}s)")
+        logger.info(
+            f"Heartbeat started (interval={self.heartbeat_interval}s, timeout={self.heartbeat_timeout}s)"
+        )
 
     async def stop_heartbeat(self) -> None:
         """Stop heartbeat monitoring."""
@@ -225,11 +215,9 @@ class ConnectionManager:
                 for connection in self.connections.values():
                     if connection.state == ConnectionState.CONNECTED:
                         try:
-                            await connection.send({
-                                "jsonrpc": "2.0",
-                                "method": "heartbeat",
-                                "params": {}
-                            })
+                            await connection.send(
+                                {"jsonrpc": "2.0", "method": "heartbeat", "params": {}}
+                            )
                         except Exception as e:
                             logger.error(f"Failed to send heartbeat to {connection.client_id}: {e}")
 

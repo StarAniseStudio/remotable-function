@@ -59,7 +59,7 @@ class Client:
         version: str = "1.0.0",
         auto_reconnect: bool = True,
         reconnect_interval: int = 5,
-        reconnect_max_attempts: int = 10
+        reconnect_max_attempts: int = 10,
     ):
         """
         Initialize Client.
@@ -86,7 +86,7 @@ class Client:
             version=version,
             platform=platform.system(),
             capabilities=["filesystem", "shell"],
-            metadata={}
+            metadata={},
         )
 
         # Tool registry
@@ -221,7 +221,7 @@ class Client:
             self._websocket = await websockets.connect(
                 self.server_url,
                 ping_interval=None,  # Disable built-in ping (we use our own heartbeat)
-                ping_timeout=None    # Disable ping timeout
+                ping_timeout=None,  # Disable ping timeout
             )
 
             # Send registration
@@ -301,8 +301,8 @@ class Client:
                 "platform": self.client_info.platform,
                 "capabilities": self.client_info.capabilities,
                 "metadata": self.client_info.metadata,
-                "tools": tools
-            }
+                "tools": tools,
+            },
         }
 
         await self._websocket.send(json.dumps(message))
@@ -339,11 +339,9 @@ class Client:
                 await asyncio.sleep(30)
 
                 if self.is_connected and self._websocket:
-                    await self._websocket.send(json.dumps({
-                        "jsonrpc": "2.0",
-                        "method": "heartbeat",
-                        "params": {}
-                    }))
+                    await self._websocket.send(
+                        json.dumps({"jsonrpc": "2.0", "method": "heartbeat", "params": {}})
+                    )
 
             except asyncio.CancelledError:
                 break
@@ -388,18 +386,14 @@ class Client:
                 client_id=self.client_id,
                 request_id=request_id,
                 timestamp=datetime.now().timestamp(),
-                metadata={}
+                metadata={},
             )
 
             # Execute tool
             result = await tool(context, **args)
 
             # Send success response
-            response = {
-                "jsonrpc": "2.0",
-                "id": request_id,
-                "result": result
-            }
+            response = {"jsonrpc": "2.0", "id": request_id, "result": result}
 
             if self._websocket:
                 await self._websocket.send(json.dumps(response))
@@ -413,10 +407,7 @@ class Client:
             error_response = {
                 "jsonrpc": "2.0",
                 "id": request_id,
-                "error": {
-                    "code": RPCErrorCode.INTERNAL_ERROR,
-                    "message": str(e)
-                }
+                "error": {"code": RPCErrorCode.INTERNAL_ERROR, "message": str(e)},
             }
 
             if self._websocket:
@@ -432,7 +423,9 @@ class Client:
 
             # Only log on first few attempts to avoid spam
             if self._reconnect_attempts <= 3:
-                logger.info(f"Reconnecting in {wait_time}s (attempt {self._reconnect_attempts}/{self.reconnect_max_attempts})...")
+                logger.info(
+                    f"Reconnecting in {wait_time}s (attempt {self._reconnect_attempts}/{self.reconnect_max_attempts})..."
+                )
             await asyncio.sleep(wait_time)
 
             try:
@@ -447,7 +440,4 @@ class Client:
 
     def __repr__(self) -> str:
         """String representation."""
-        return (
-            f"Client(id={self.client_id}, state={self._state}, "
-            f"tools={len(self._tools)})"
-        )
+        return f"Client(id={self.client_id}, state={self._state}, " f"tools={len(self._tools)})"

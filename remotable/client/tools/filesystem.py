@@ -27,13 +27,13 @@ class ReadFileTool(Tool):
             name="path",
             type=ParameterType.STRING,
             description="Path to the file to read",
-            required=True
+            required=True,
         ),
         ParameterSchema(
             name="encoding",
             type=ParameterType.STRING,
             description="File encoding (default: utf-8)",
-            required=False
+            required=False,
         ),
     ]
 
@@ -63,11 +63,7 @@ class ReadFileTool(Tool):
             with open(normalized_path, "r", encoding=encoding) as f:
                 content = f.read()
 
-            return {
-                "content": content,
-                "size": len(content),
-                "path": normalized_path
-            }
+            return {"content": content, "size": len(content), "path": normalized_path}
 
         except FileNotFoundError:
             raise ValueError(f"File not found: {normalized_path}")
@@ -91,25 +87,22 @@ class WriteFileTool(Tool):
             name="path",
             type=ParameterType.STRING,
             description="Path to the file to write",
-            required=True
+            required=True,
         ),
         ParameterSchema(
-            name="content",
-            type=ParameterType.STRING,
-            description="Content to write",
-            required=True
+            name="content", type=ParameterType.STRING, description="Content to write", required=True
         ),
         ParameterSchema(
             name="encoding",
             type=ParameterType.STRING,
             description="File encoding (default: utf-8)",
-            required=False
+            required=False,
         ),
         ParameterSchema(
             name="append",
             type=ParameterType.BOOLEAN,
             description="Append to file instead of overwriting (default: false)",
-            required=False
+            required=False,
         ),
     ]
 
@@ -149,11 +142,7 @@ class WriteFileTool(Tool):
             with open(normalized_path, mode, encoding=encoding) as f:
                 f.write(content)
 
-            return {
-                "path": normalized_path,
-                "size": len(content),
-                "appended": append
-            }
+            return {"path": normalized_path, "size": len(content), "appended": append}
 
         except PermissionError:
             raise PermissionError(f"Permission denied: {normalized_path}")
@@ -175,13 +164,13 @@ class ListDirectoryTool(Tool):
             name="path",
             type=ParameterType.STRING,
             description="Path to the directory to list",
-            required=True
+            required=True,
         ),
         ParameterSchema(
             name="recursive",
             type=ParameterType.BOOLEAN,
             description="List recursively (default: false)",
-            required=False
+            required=False,
         ),
     ]
 
@@ -222,37 +211,31 @@ class ListDirectoryTool(Tool):
                 for root, dirs, filenames in os.walk(normalized_path):
                     for dirname in dirs:
                         dir_path = os.path.join(root, dirname)
-                        directories.append({
-                            "name": dirname,
-                            "path": dir_path
-                        })
+                        directories.append({"name": dirname, "path": dir_path})
                     for filename in filenames:
                         file_path = os.path.join(root, filename)
-                        files.append({
-                            "name": filename,
-                            "path": file_path,
-                            "size": os.path.getsize(file_path)
-                        })
+                        files.append(
+                            {
+                                "name": filename,
+                                "path": file_path,
+                                "size": os.path.getsize(file_path),
+                            }
+                        )
             else:
                 for item in os.listdir(normalized_path):
                     item_path = os.path.join(normalized_path, item)
                     if os.path.isdir(item_path):
-                        directories.append({
-                            "name": item,
-                            "path": item_path
-                        })
+                        directories.append({"name": item, "path": item_path})
                     else:
-                        files.append({
-                            "name": item,
-                            "path": item_path,
-                            "size": os.path.getsize(item_path)
-                        })
+                        files.append(
+                            {"name": item, "path": item_path, "size": os.path.getsize(item_path)}
+                        )
 
             return {
                 "path": normalized_path,
                 "files": files,
                 "directories": directories,
-                "count": len(files) + len(directories)
+                "count": len(files) + len(directories),
             }
 
         except PermissionError:
@@ -275,13 +258,13 @@ class DeleteFileTool(Tool):
             name="path",
             type=ParameterType.STRING,
             description="Path to the file or directory to delete",
-            required=True
+            required=True,
         ),
         ParameterSchema(
             name="recursive",
             type=ParameterType.BOOLEAN,
             description="Delete directory recursively (default: false)",
-            required=False
+            required=False,
         ),
     ]
 
@@ -314,6 +297,7 @@ class DeleteFileTool(Tool):
             if os.path.isdir(normalized_path):
                 if recursive:
                     import shutil
+
                     shutil.rmtree(normalized_path)
                     item_type = "directory"
                 else:
@@ -323,11 +307,7 @@ class DeleteFileTool(Tool):
                 os.remove(normalized_path)
                 item_type = "file"
 
-            return {
-                "path": normalized_path,
-                "deleted": True,
-                "type": item_type
-            }
+            return {"path": normalized_path, "deleted": True, "type": item_type}
 
         except PermissionError:
             raise PermissionError(f"Permission denied: {normalized_path}")

@@ -27,19 +27,19 @@ class ShellExecuteTool(Tool):
             name="command",
             type=ParameterType.STRING,
             description="Shell command to execute",
-            required=True
+            required=True,
         ),
         ParameterSchema(
             name="cwd",
             type=ParameterType.STRING,
             description="Working directory (default: current directory)",
-            required=False
+            required=False,
         ),
         ParameterSchema(
             name="timeout",
             type=ParameterType.INTEGER,
             description="Command timeout in seconds (default: 30)",
-            required=False
+            required=False,
         ),
     ]
 
@@ -67,18 +67,12 @@ class ShellExecuteTool(Tool):
         try:
             # Create subprocess
             process = await asyncio.create_subprocess_shell(
-                command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=cwd
+                command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=cwd
             )
 
             # Wait for completion with timeout
             try:
-                stdout, stderr = await asyncio.wait_for(
-                    process.communicate(),
-                    timeout=timeout
-                )
+                stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
             except asyncio.TimeoutError:
                 process.kill()
                 await process.wait()
@@ -92,7 +86,7 @@ class ShellExecuteTool(Tool):
                 "stdout": stdout_str,
                 "stderr": stderr_str,
                 "returncode": process.returncode,
-                "command": command
+                "command": command,
             }
 
         except FileNotFoundError:

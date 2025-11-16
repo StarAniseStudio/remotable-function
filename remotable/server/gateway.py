@@ -56,7 +56,7 @@ class Gateway:
         port: int = 8000,
         heartbeat_interval: int = 30,
         heartbeat_timeout: int = 60,
-        default_timeout: int = 30
+        default_timeout: int = 30,
     ):
         """
         Initialize Gateway.
@@ -75,8 +75,7 @@ class Gateway:
         # Core components
         self.registry = ToolRegistry()
         self.manager = ConnectionManager(
-            heartbeat_interval=heartbeat_interval,
-            heartbeat_timeout=heartbeat_timeout
+            heartbeat_interval=heartbeat_interval, heartbeat_timeout=heartbeat_timeout
         )
 
         # WebSocket server
@@ -174,7 +173,7 @@ class Gateway:
             self.host,
             self.port,
             ping_interval=None,  # Disable built-in ping (we use our own heartbeat)
-            ping_timeout=None    # Disable ping timeout
+            ping_timeout=None,  # Disable ping timeout
         )
 
         # Start heartbeat
@@ -219,11 +218,13 @@ class Gateway:
             data = json.loads(message)
 
             if data.get("method") != "register":
-                await websocket.send(RPCError(
-                    code=RPCErrorCode.INVALID_REQUEST,
-                    message="First message must be registration",
-                    request_id=data.get("id")
-                ).to_json())
+                await websocket.send(
+                    RPCError(
+                        code=RPCErrorCode.INVALID_REQUEST,
+                        message="First message must be registration",
+                        request_id=data.get("id"),
+                    ).to_json()
+                )
                 return
 
             # Parse client info
@@ -235,7 +236,7 @@ class Gateway:
                 version=params.get("version", "unknown"),
                 platform=params.get("platform", "unknown"),
                 capabilities=params.get("capabilities", []),
-                metadata=params.get("metadata", {})
+                metadata=params.get("metadata", {}),
             )
 
             # Register client
@@ -249,15 +250,17 @@ class Gateway:
                 await self._emit("tool_registered", client_id, tool.full_name)
 
             # Send registration success
-            await connection.send({
-                "jsonrpc": "2.0",
-                "id": data.get("id"),
-                "result": {
-                    "status": "registered",
-                    "client_id": client_id,
-                    "server_time": datetime.now().isoformat()
+            await connection.send(
+                {
+                    "jsonrpc": "2.0",
+                    "id": data.get("id"),
+                    "result": {
+                        "status": "registered",
+                        "client_id": client_id,
+                        "server_time": datetime.now().isoformat(),
+                    },
                 }
-            })
+            )
 
             logger.info(f"Client {client_id} registered with {len(tools)} tools")
 
@@ -308,7 +311,7 @@ class Gateway:
         client_id: str,
         tool: str,
         args: Optional[Dict[str, Any]] = None,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
     ) -> Any:
         """
         Call a tool on a remote client.
@@ -350,10 +353,7 @@ class Gateway:
             "jsonrpc": "2.0",
             "id": request_id,
             "method": "tool.execute",
-            "params": {
-                "tool": tool,
-                "args": args or {}
-            }
+            "params": {"tool": tool, "args": args or {}},
         }
 
         # Create future for response

@@ -28,11 +28,7 @@ class ToolRegistry:
         self._by_tag: Dict[str, Set[str]] = {}  # tag -> {full_names}
         self._by_client: Dict[str, Set[str]] = {}  # client_id -> {full_names}
 
-    def register(
-        self,
-        tool: ToolDefinition,
-        client_id: Optional[str] = None
-    ) -> None:
+    def register(self, tool: ToolDefinition, client_id: Optional[str] = None) -> None:
         """
         Register a tool.
 
@@ -176,9 +172,7 @@ class ToolRegistry:
             return []
 
         return [
-            self._tools[full_name]
-            for full_name in self._by_tag[tag]
-            if full_name in self._tools
+            self._tools[full_name] for full_name in self._by_tag[tag] if full_name in self._tools
         ]
 
     def list_by_client(self, client_id: str) -> List[ToolDefinition]:
