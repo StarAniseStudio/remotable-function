@@ -1,0 +1,11 @@
+# Remotable (from parent module)
+# Will use: ../../remotable
+
+# AI Agent framework (optional)
+agno>=2.2.13
+
+# OpenAI (optional, needed for LLM mode)
+openai>=2.8.0
+
+# Rich for beautiful CLI
+rich>=14.2.0

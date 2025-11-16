@@ -1,0 +1,6 @@
+# Remotable - Production Dependencies
+#
+# Install with: pip install -r requirements.txt
+
+# Core dependency
+websockets>=10.0

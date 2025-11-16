@@ -1,0 +1,22 @@
+# Documentation
+include README.md
+include LICENSE
+include CHANGELOG.md
+
+# Type hints
+include remotable/py.typed
+recursive-include remotable *.py *.pyi
+
+# Exclude development files
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * .DS_Store
+recursive-exclude * *.swp
+recursive-exclude * *.swo
+
+# Exclude demo and docs (not needed in package)
+prune demo
+prune agent_demo
+prune docs
+prune .git
+prune .github
