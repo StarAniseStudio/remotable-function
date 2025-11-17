@@ -119,16 +119,16 @@ class SystemInfoTool(Tool):
 
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
-    datefmt="%H:%M:%S"
-)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
+#     datefmt="%H:%M:%S"
+# )
+# logger = logging.getLogger(__name__)
 
 # 只显示 INFO 及以上级别
-logging.getLogger("remotable").setLevel(logging.INFO)
-logging.getLogger("websockets").setLevel(logging.WARNING)
+# logging.getLogger("remotable").setLevel(logging.INFO)
+# logging.getLogger("websockets").setLevel(logging.WARNING)
 
 
 async def main():
