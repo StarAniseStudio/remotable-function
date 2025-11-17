@@ -55,14 +55,33 @@ logs/
 # Test coverage
 coverage/
 .nyc_output/
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+junit.xml
+coverage.xml
 
 # Temporary files
 tmp/
 temp/
 
 # Demo test files (动态生成的测试文件)
-demo/test_files/*.txt
-!demo/test_files/README.md
+test_files
+
 
 # OS specific
 Thumbs.db
+
+
+PUBLISHING.md
+
+run_tests.sh
+
+tests
+
+pytest.ini
+
+release_github.sh
+
+ROADMAP.md

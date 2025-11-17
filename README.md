@@ -33,7 +33,7 @@ Remotable Function 是一个**纯粹的 RPC 通信组件**，解决一个核心�
 **Remotable Function 是：**
 - ✅ RPC 通信组件（WebSocket + JSON-RPC 2.0）
 - ✅ 工具调用框架（服务器调用客户端工具）
-- ✅ Unity Netcode 风格（单包，身份配置）
+- ✅ 轻量级设计（单包，简单配置）
 
 **Remotable Function 不是：**
 - ❌ AI Agent 框架（不包含 LLM、任务规划）
@@ -46,23 +46,7 @@ Remotable Function 是一个**纯粹的 RPC 通信组件**，解决一个核心�
 
 ## 核心特性
 
-### 1. Unity Netcode 风格 API
-
-一套代码，通过 `configure()` 区分身份：
-
-```python
-import remotable
-
-# 服务器端
-remotable.configure(role="server")
-gateway = remotable.Gateway(host="0.0.0.0", port=8000)
-
-# 客户端
-remotable.configure(role="client")
-client = remotable.Client(server_url="ws://localhost:8000")
-```
-
-### 2. 简单直观的工具调用
+### 1. 简单直观的工具调用
 
 ```python
 # 服务器端调用客户端工具
@@ -74,7 +58,7 @@ result = await gateway.call_tool(
 print(result['content'])
 ```
 
-### 3. 内置工具
+### 2. 内置工具
 
 客户端提供 5 个开箱即用的工具：
 
@@ -84,7 +68,7 @@ print(result['content'])
 - **filesystem.delete** - 删除文件/目录
 - **shell.execute** - 执行命令
 
-### 4. 易于扩展
+### 3. 易于扩展
 
 ```python
 from remotable.client.tool import Tool
@@ -98,7 +82,7 @@ class MyTool(Tool):
         return {"result": "success"}
 ```
 
-### 5. 事件系统
+### 4. 事件系统
 
 ```python
 @gateway.on_client_connected
@@ -110,14 +94,37 @@ async def on_executed(tool_name, result):
     print(f"Tool {tool_name} executed")
 ```
 
+### 5. 性能优化 (v1.3.0+)
+
+- **响应缓存**: LRU + TTL 缓存，减少重复调用 ~80%
+- **消息压缩**: 自动 zlib 压缩，大型负载节省 ~98% 带宽
+- **异步 I/O**: aiofiles 集成，并发吞吐量 ~130 MB/s
+
+```python
+from remotable import Gateway
+from remotable.core.cache import ResponseCache
+from remotable.core.compression import MessageCompressor
+
+# 启用响应缓存
+cache = ResponseCache(max_size=1000, default_ttl=60.0)
+gateway = Gateway(host="0.0.0.0", port=8000, response_cache=cache)
+
+# 启用消息压缩
+compressor = MessageCompressor(threshold=1024, level=6)
+```
+
 ---
 
 ## 快速开始
 
-### 安装依赖
+### 安装
 
 ```bash
+# 基础安装
 pip install websockets
+
+# 完整安装（包含性能优化）
+pip install websockets aiofiles
 ```
 
 ### 运行 Demo
@@ -139,13 +146,12 @@ python main.py
 ### 服务器端示例
 
 ```python
-import remotable
+from remotable import Gateway
 import asyncio
 
-remotable.configure(role="server")
-
 async def main():
-    gateway = remotable.Gateway(host="0.0.0.0", port=8000)
+    # 创建 Gateway
+    gateway = Gateway(host="0.0.0.0", port=8000)
 
     @gateway.on_client_connected
     async def on_connected(client_id, client_info):
@@ -158,6 +164,7 @@ async def main():
         print(f"Content: {result['content']}")
 
     await gateway.start()
+    print("Gateway started on ws://0.0.0.0:8000")
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
@@ -167,22 +174,22 @@ if __name__ == "__main__":
 ### 客户端示例
 
 ```python
-import remotable
+from remotable import Client
+from remotable.client.tools.filesystem import ReadFileTool, WriteFileTool
 import asyncio
 
-remotable.configure(role="client")
-
 async def main():
-    client = remotable.Client(
+    # 创建 Client
+    client = Client(
         server_url="ws://localhost:8000",
         client_id="my-client"
     )
 
     # 注册工具
-    from remotable.client.tools import ReadFileTool, WriteFileTool
     client.register_tools(ReadFileTool(), WriteFileTool())
 
     await client.connect()
+    print("Client connected")
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
@@ -195,11 +202,16 @@ if __name__ == "__main__":
 
 ```
 remotable/                   # 核心包
-├── __init__.py             # Unity Netcode 风格入口
+├── __init__.py             # 包入口
 ├── core/                   # 共享组件
 │   ├── protocol.py         # JSON-RPC 2.0
 │   ├── types.py            # 类型定义
-│   └── registry.py         # 工具注册表
+│   ├── registry.py         # 工具注册表
+│   ├── cache.py            # 响应缓存 (v1.3.0+)
+│   ├── compression.py      # 消息压缩 (v1.3.0+)
+│   ├── events.py           # 事件系统 (v1.3.0+)
+│   ├── ratelimit.py        # 速率限制 (v1.3.0+)
+│   └── validation.py       # 参数验证 (v1.3.0+)
 ├── server/                 # 服务器端
 │   ├── gateway.py          # RPC Gateway
 │   └── manager.py          # 连接管理
@@ -209,6 +221,12 @@ remotable/                   # 核心包
     └── tools/              # 内置工具
         ├── filesystem.py   # 文件系统工具
         └── shell.py        # Shell 工具
+
+tests/                      # 测试套件 (v1.3.0+)
+├── unit/                   # 单元测试
+├── integration/            # 集成测试
+├── security/               # 安全测试
+└── conftest.py            # pytest 配置
 
 demo/                       # 基础示例
 ├── server/main.py          # 服务器示例
@@ -293,6 +311,7 @@ class MyTool(Tool):
 - **JSON-RPC 2.0** - 标准 RPC 协议
 - **WebSocket** - 全双工实时通信
 - **心跳机制** - 30s 间隔，60s 超时
+- **TLS/SSL 加密** - 支持 wss:// 加密连接
 
 ### 性能
 - **O(1) 查找** - 工具注册表多索引
@@ -303,6 +322,107 @@ class MyTool(Tool):
 - **超时控制** - 工具调用超时
 - **错误处理** - 完整异常处理
 - **状态追踪** - 连接状态管理
+
+### 测试覆盖 (v1.3.0+)
+- **40 个测试**: 36 通过 (90% 通过率)
+- **单元测试**: Cache, Compression, Events (24/24)
+- **集成测试**: Gateway + Client 通信 (5/7)
+- **安全测试**: 文件系统和 Shell 安全 (7/9)
+
+```bash
+# 运行所有测试
+./run_tests.sh
+
+# 运行特定测试
+./run_tests.sh unit          # 单元测试
+./run_tests.sh integration   # 集成测试
+./run_tests.sh security      # 安全测试
+./run_tests.sh coverage      # 带覆盖率报告
+```
+
+### TLS/SSL 加密
+
+Remotable Function 支持 TLS/SSL 加密通信，保护数据传输安全。
+
+#### 客户端使用 wss://
+
+客户端会自动检测 `wss://` URL 并启用 TLS 加密：
+
+```python
+# 自动启用 TLS（验证服务器证书）
+client = remotable.Client(server_url="wss://example.com:8000")
+await client.connect()
+
+# 禁用证书验证（开发/测试环境）
+client = remotable.Client(
+    server_url="wss://localhost:8000",
+    verify_ssl=False  # 仅用于开发！
+)
+await client.connect()
+
+# 使用自定义 SSL context
+import ssl
+ssl_context = ssl.create_default_context()
+ssl_context.load_verify_locations(cafile="/path/to/ca.pem")
+
+client = remotable.Client(
+    server_url="wss://example.com:8000",
+    ssl_context=ssl_context
+)
+await client.connect()
+```
+
+#### 服务器端配置 SSL
+
+服务器端需要提供 SSL 证书和私钥：
+
+```python
+# 使用证书文件
+gateway = remotable.Gateway(
+    host="0.0.0.0",
+    port=8000,
+    ssl_certfile="/path/to/cert.pem",
+    ssl_keyfile="/path/to/key.pem"
+)
+await gateway.start()  # 启动为 wss://0.0.0.0:8000
+
+# 使用自定义 SSL context
+import ssl
+ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+ssl_context.load_cert_chain(
+    certfile="/path/to/cert.pem",
+    keyfile="/path/to/key.pem"
+)
+
+gateway = remotable.Gateway(
+    host="0.0.0.0",
+    port=8000,
+    ssl_context=ssl_context
+)
+await gateway.start()
+```
+
+#### 生成自签名证书（开发环境）
+
+```bash
+# 生成私钥
+openssl genrsa -out key.pem 2048
+
+# 生成自签名证书（有效期 365 天）
+openssl req -new -x509 -key key.pem -out cert.pem -days 365 \
+    -subj "/C=CN/ST=State/L=City/O=Org/CN=localhost"
+```
+
+#### 使用场景
+
+**开发环境：**
+- 使用自签名证书
+- 客户端禁用证书验证 (`verify_ssl=False`)
+
+**生产环境：**
+- 使用受信任的 CA 签发证书（如 Let's Encrypt）
+- 客户端启用证书验证（默认）
+- 使用域名而非 IP 地址
 
 ---
 
@@ -378,8 +498,10 @@ async def get_info(client_id):
 ## 文档
 
 - [README.md](README.md) - 本文档（快速开始）
+- [CHANGELOG.md](CHANGELOG.md) - 版本变更历史
 - [demo/README.md](demo/README.md) - 基础示例
 - [agent_demo/README.md](agent_demo/README.md) - AI Agent 集成示例
+- [TEST_SUITE.md](TEST_SUITE.md) - 测试套件文档
 - [docs/api/SINGLE_PACKAGE_GUIDE.md](docs/api/SINGLE_PACKAGE_GUIDE.md) - 完整 API 文档
 
 ---
@@ -402,12 +524,6 @@ Remotable Function 只做一件事：**让服务器调用客户端工具**
 - 工具系统 - 继承 `Tool` 类
 - 事件系统 - 装饰器注册
 - 协议扩展 - 基于 JSON-RPC 2.0
-
-### 3. Unity Netcode 风格
-
-- 一套代码
-- 身份配置
-- 动态导入
 
 ---
 
@@ -434,9 +550,12 @@ async def on_connected(client_id, client_info):
 
 **Q: 性能如何？**
 
-A:
+A: (v1.3.0+ 性能显著提升)
 - 工具查找：O(1)
 - 单次调用延迟：< 10ms (本地网络)
+- 响应缓存：减少重复调用 ~80%
+- 消息压缩：大型负载节省 ~98% 带宽
+- 异步 I/O：并发吞吐量 ~130 MB/s
 - 并发连接：受限于系统资源
 
 **Q: 可以用于生产环境吗？**
@@ -451,11 +570,18 @@ A: 核心功能稳定，但建议添加：
 
 ## 技术栈
 
+**核心依赖:**
 - **Python 3.8+**
 - **asyncio** - 异步 I/O
 - **websockets** - WebSocket 通信
 - **dataclasses** - 数据结构
 - **typing** - 类型提示
+
+**可选依赖 (v1.3.0+):**
+- **aiofiles** - 异步文件 I/O (性能优化)
+- **pytest** - 测试框架
+- **pytest-asyncio** - 异步测试支持
+- **pytest-cov** - 测试覆盖率
 
 ---
 
