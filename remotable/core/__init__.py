@@ -14,6 +14,17 @@ from .types import (
     ToolExecutionState,
 )
 from .registry import ToolRegistry
+from .ratelimit import (
+    RateLimiter,
+    SlidingWindowRateLimiter,
+    TokenBucketRateLimiter,
+    CompositeRateLimiter,
+    RateLimitConfig,
+    create_rate_limiter,
+)
+from .events import EventEmitter, EventPriority, EventHandler
+from .cache import LRUCache, ResponseCache, CacheStats
+from .compression import MessageCompressor, CompressionStats, create_compressed_message, extract_compressed_message
 
 __all__ = [
     # Protocol
@@ -32,4 +43,24 @@ __all__ = [
     "ToolExecutionState",
     # Registry
     "ToolRegistry",
+    # Rate Limiting
+    "RateLimiter",
+    "SlidingWindowRateLimiter",
+    "TokenBucketRateLimiter",
+    "CompositeRateLimiter",
+    "RateLimitConfig",
+    "create_rate_limiter",
+    # Events
+    "EventEmitter",
+    "EventPriority",
+    "EventHandler",
+    # Cache
+    "LRUCache",
+    "ResponseCache",
+    "CacheStats",
+    # Compression
+    "MessageCompressor",
+    "CompressionStats",
+    "create_compressed_message",
+    "extract_compressed_message",
 ]

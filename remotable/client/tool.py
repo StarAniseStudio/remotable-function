@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional
 from abc import ABC, abstractmethod
 
 from ..core.types import ToolDefinition, ParameterSchema, ToolContext, ToolExample
+from ..core.validation import validate_parameters, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -93,30 +94,26 @@ class Tool(ABC):
         """
         pass
 
-    def validate_args(self, kwargs: Dict[str, Any]) -> None:
+    def validate_args(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate tool arguments against parameter schemas.
 
         Args:
             kwargs: Tool arguments
 
+        Returns:
+            Validated and coerced arguments
+
         Raises:
-            ValueError: If validation fails
+            ValidationError: If validation fails
         """
-        # Check required parameters
-        for param in self.parameters:
-            if param.required and param.name not in kwargs:
-                raise ValueError(f"Missing required parameter: {param.name}")
-
-        # Check parameter types (basic validation)
-        for param in self.parameters:
-            if param.name in kwargs:
-                value = kwargs[param.name]
-
-                # Type validation would go here
-                # For now, just check None for required params
-                if param.required and value is None:
-                    raise ValueError(f"Parameter '{param.name}' cannot be None")
+        try:
+            # Use enhanced parameter validator
+            return validate_parameters(kwargs, self.parameters)
+        except ValidationError as e:
+            # Re-raise with tool context
+            logger.error(f"Validation failed for tool {self.full_name}: {e}")
+            raise
 
     def to_definition(self) -> ToolDefinition:
         """

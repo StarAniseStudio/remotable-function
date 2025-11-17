@@ -1,0 +1,5 @@
+# Remotable (from parent module)
+# Will use: ../../remotable
+
+# Rich for beautiful CLI
+rich>=13.0.0

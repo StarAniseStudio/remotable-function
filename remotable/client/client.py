@@ -8,6 +8,7 @@ import asyncio
 import json
 import logging
 import platform
+import ssl
 import uuid
 from typing import Dict, List, Optional, Callable, Any
 from datetime import datetime
@@ -60,17 +61,25 @@ class Client:
         auto_reconnect: bool = True,
         reconnect_interval: int = 5,
         reconnect_max_attempts: int = 10,
+        ssl_context: Optional[ssl.SSLContext] = None,
+        verify_ssl: bool = True,
+        auth_token: Optional[str] = None,
+        auth_credentials: Optional[Dict[str, Any]] = None,
     ):
         """
         Initialize Client.
 
         Args:
-            server_url: Gateway server URL (e.g., ws://localhost:8000)
+            server_url: Gateway server URL (e.g., ws://localhost:8000 or wss://example.com:8000)
             client_id: Client ID (auto-generated if not provided)
             version: Client version
             auto_reconnect: Enable auto-reconnect
             reconnect_interval: Reconnect interval in seconds
             reconnect_max_attempts: Max reconnect attempts
+            ssl_context: Custom SSL context (auto-created for wss:// if not provided)
+            verify_ssl: Whether to verify SSL certificates (default: True)
+            auth_token: Authentication token (for token-based auth)
+            auth_credentials: Authentication credentials dictionary (for custom auth)
         """
         self.server_url = server_url
         self.client_id = client_id or f"client-{uuid.uuid4().hex[:8]}"
@@ -78,6 +87,23 @@ class Client:
         self.auto_reconnect = auto_reconnect
         self.reconnect_interval = reconnect_interval
         self.reconnect_max_attempts = reconnect_max_attempts
+        self.verify_ssl = verify_ssl
+
+        # Authentication
+        if auth_credentials is not None:
+            self.auth_credentials = auth_credentials
+        elif auth_token is not None:
+            self.auth_credentials = {"token": auth_token}
+        else:
+            self.auth_credentials = {}
+
+        # Auto-create SSL context for wss:// URLs
+        if ssl_context is not None:
+            self._ssl_context = ssl_context
+        elif server_url.startswith("wss://"):
+            self._ssl_context = self._create_ssl_context()
+        else:
+            self._ssl_context = None
 
         # Client info
         self.client_info = ClientInfo(
@@ -107,6 +133,23 @@ class Client:
             "tool_executed": [],
             "error": [],
         }
+
+    def _create_ssl_context(self) -> ssl.SSLContext:
+        """
+        Create SSL context for wss:// connections.
+
+        Returns:
+            Configured SSL context
+        """
+        ssl_context = ssl.create_default_context()
+
+        if not self.verify_ssl:
+            # Disable certificate verification (for development/testing)
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            logger.warning("SSL certificate verification is disabled!")
+
+        return ssl_context
 
     @property
     def is_connected(self) -> bool:
@@ -220,6 +263,7 @@ class Client:
             # Disable websockets' built-in ping/pong to avoid conflicts with our heartbeat
             self._websocket = await websockets.connect(
                 self.server_url,
+                ssl=self._ssl_context,  # Use SSL context for wss:// connections
                 ping_interval=None,  # Disable built-in ping (we use our own heartbeat)
                 ping_timeout=None,  # Disable ping timeout
             )
@@ -290,19 +334,26 @@ class Client:
         # Prepare tools list
         tools = [tool.to_dict() for tool in self.registry.list_all()]
 
+        # Prepare registration params
+        params = {
+            "client_id": self.client_id,
+            "version": self.version,
+            "platform": self.client_info.platform,
+            "capabilities": self.client_info.capabilities,
+            "metadata": self.client_info.metadata,
+            "tools": tools,
+        }
+
+        # Add authentication credentials if provided
+        if self.auth_credentials:
+            params["credentials"] = self.auth_credentials
+
         # Send registration
         message = {
             "jsonrpc": "2.0",
             "id": str(uuid.uuid4()),
             "method": "register",
-            "params": {
-                "client_id": self.client_id,
-                "version": self.version,
-                "platform": self.client_info.platform,
-                "capabilities": self.client_info.capabilities,
-                "metadata": self.client_info.metadata,
-                "tools": tools,
-            },
+            "params": params,
         }
 
         await self._websocket.send(json.dumps(message))

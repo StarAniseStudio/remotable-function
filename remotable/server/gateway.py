@@ -7,6 +7,7 @@ The Gateway is the bridge between server-side AI agents and client-side tools.
 import asyncio
 import json
 import logging
+import ssl
 import uuid
 from typing import Dict, Optional, Callable, Any, List
 from datetime import datetime
@@ -16,6 +17,8 @@ from websockets.server import WebSocketServerProtocol, serve
 from ..core.types import ClientInfo, ToolDefinition
 from ..core.protocol import RPCRequest, RPCResponse, RPCError, RPCErrorCode
 from ..core.registry import ToolRegistry
+from ..core.auth import AuthProvider, NoAuthProvider
+from ..core.ratelimit import RateLimiter, create_rate_limiter
 from .manager import ConnectionManager
 
 logger = logging.getLogger(__name__)
@@ -57,6 +60,14 @@ class Gateway:
         heartbeat_interval: int = 30,
         heartbeat_timeout: int = 60,
         default_timeout: int = 30,
+        ssl_certfile: Optional[str] = None,
+        ssl_keyfile: Optional[str] = None,
+        ssl_context: Optional[ssl.SSLContext] = None,
+        auth_provider: Optional[AuthProvider] = None,
+        require_auth: bool = False,
+        rate_limiter: Optional[RateLimiter] = None,
+        enable_rate_limit: bool = False,
+        rate_limit_requests_per_minute: int = 100,
     ):
         """
         Initialize Gateway.
@@ -67,10 +78,51 @@ class Gateway:
             heartbeat_interval: Heartbeat interval in seconds
             heartbeat_timeout: Heartbeat timeout in seconds
             default_timeout: Default tool invocation timeout in seconds
+            ssl_certfile: Path to SSL certificate file (for wss://)
+            ssl_keyfile: Path to SSL private key file (for wss://)
+            ssl_context: Custom SSL context (overrides certfile/keyfile)
+            auth_provider: Authentication provider (default: NoAuthProvider)
+            require_auth: Require authentication (default: False for backward compatibility)
+            rate_limiter: Custom rate limiter (default: None)
+            enable_rate_limit: Enable default rate limiting (default: False)
+            rate_limit_requests_per_minute: Requests per minute when using default rate limiter
         """
         self.host = host
         self.port = port
         self.default_timeout = default_timeout
+        self.ssl_certfile = ssl_certfile
+        self.ssl_keyfile = ssl_keyfile
+        self.require_auth = require_auth
+
+        # Authentication
+        if auth_provider is not None:
+            self.auth_provider = auth_provider
+            self.require_auth = True  # If provider given, enable auth
+        elif require_auth:
+            raise ValueError("require_auth=True but no auth_provider provided")
+        else:
+            self.auth_provider = NoAuthProvider()
+
+        # Rate limiting
+        if rate_limiter is not None:
+            self.rate_limiter = rate_limiter
+            self.enable_rate_limit = True
+        elif enable_rate_limit:
+            self.rate_limiter = create_rate_limiter(
+                requests_per_minute=rate_limit_requests_per_minute
+            )
+            self.enable_rate_limit = True
+        else:
+            self.rate_limiter = None
+            self.enable_rate_limit = False
+
+        # Create SSL context if certificate files provided
+        if ssl_context is not None:
+            self._ssl_context = ssl_context
+        elif ssl_certfile and ssl_keyfile:
+            self._ssl_context = self._create_ssl_context()
+        else:
+            self._ssl_context = None
 
         # Core components
         self.registry = ToolRegistry()
@@ -93,6 +145,22 @@ class Gateway:
         # Setup connection manager callbacks
         self.manager.on("connected", self._on_client_connected)
         self.manager.on("disconnected", self._on_client_disconnected)
+
+    def _create_ssl_context(self) -> ssl.SSLContext:
+        """
+        Create SSL context for wss:// server.
+
+        Returns:
+            Configured SSL context with loaded certificate and key
+
+        Raises:
+            FileNotFoundError: If certificate or key file not found
+            ssl.SSLError: If SSL configuration fails
+        """
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ssl_context.load_cert_chain(certfile=self.ssl_certfile, keyfile=self.ssl_keyfile)
+        logger.info("SSL context created with certificate and key")
+        return ssl_context
 
     def on_client_connected(self, callback: Callable) -> Callable:
         """
@@ -172,6 +240,7 @@ class Gateway:
             self._handle_client,
             self.host,
             self.port,
+            ssl=self._ssl_context,  # Use SSL context for wss:// connections
             ping_interval=None,  # Disable built-in ping (we use our own heartbeat)
             ping_timeout=None,  # Disable ping timeout
         )
@@ -180,7 +249,8 @@ class Gateway:
         await self.manager.start_heartbeat()
 
         self._running = True
-        logger.info(f"Gateway started on ws://{self.host}:{self.port}")
+        protocol = "wss" if self._ssl_context else "ws"
+        logger.info(f"Gateway started on {protocol}://{self.host}:{self.port}")
 
     async def stop(self) -> None:
         """Stop the Gateway server."""
@@ -230,6 +300,28 @@ class Gateway:
             # Parse client info
             params = data.get("params", {})
             client_id = params.get("client_id")
+
+            # Authenticate client
+            if self.require_auth:
+                credentials = params.get("credentials", {})
+                credentials["client_id"] = client_id  # Include client_id in credentials
+
+                identity = await self.auth_provider.authenticate(credentials)
+
+                if not identity:
+                    logger.warning(f"Authentication failed for client {client_id}")
+                    await websocket.send(
+                        RPCError(
+                            code=RPCErrorCode.PERMISSION_DENIED,
+                            message="Authentication failed",
+                            request_id=data.get("id"),
+                        ).to_json()
+                    )
+                    await websocket.close(1008, "Authentication failed")
+                    return
+
+                logger.info(f"Client {client_id} authenticated successfully")
+
             client_info = ClientInfo(
                 client_id=client_id,
                 name=params.get("name", client_id),  # Use client_id as default name
@@ -328,6 +420,7 @@ class Gateway:
         Raises:
             ValueError: If client not connected or tool not found
             TimeoutError: If tool invocation times out
+            PermissionError: If rate limit exceeded
             Exception: If tool execution fails
 
         Example:
@@ -337,6 +430,12 @@ class Gateway:
                 args={"path": "/tmp/test.txt"}
             )
         """
+        # Check rate limit
+        if self.enable_rate_limit and self.rate_limiter:
+            allowed, error_message = await self.rate_limiter.check_rate_limit(client_id)
+            if not allowed:
+                raise PermissionError(error_message)
+
         # Check client connection
         connection = self.manager.get(client_id)
         if not connection:
