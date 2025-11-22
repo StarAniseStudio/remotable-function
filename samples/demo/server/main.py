@@ -11,9 +11,10 @@ import sys
 import os
 from datetime import datetime
 
-# Configure Remotable as server
-import remotable
-remotable.configure(role="server")
+# Add remotable_function to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+
+import remotable_function
 
 # Rich console for beautiful output
 from rich.console import Console
@@ -56,61 +57,63 @@ async def main():
 
     # Create Gateway
     console.print("[bold yellow]🚀 创建 RPC Gateway[/bold yellow]")
-    gateway = remotable.Gateway(
+    gateway = remotable_function.Gateway(
         host="0.0.0.0",
         port=8000,
         heartbeat_interval=30,
-        heartbeat_timeout=60
+        heartbeat_timeout=60,
+        enable_compression=False  # Disable compression for now
     )
     console.print("[green]✓[/green] Gateway 创建成功\n")
 
     # Track connected clients
     _client_tools = {}
 
-    # Register event handlers
-    @gateway.on_client_connected
-    async def on_client_connected(client_id: str, client_info):
+    # Register event handlers using v2.0 API
+    def on_client_connected(client_id: str, tools: list):
         """Handle client connection."""
+        # Extract tool names from tool data
+        tool_names = [tool.get("name", "unknown") if isinstance(tool, dict) else str(tool) for tool in tools]
+
         console.print()
         console.print(Panel(
             f"[bold cyan]客户端ID:[/bold cyan] {client_id}\n"
-            f"[cyan]平台:[/cyan] {client_info.platform}\n"
-            f"[cyan]版本:[/cyan] {client_info.version}\n"
-            f"[cyan]能力:[/cyan] {', '.join(client_info.capabilities)}",
+            f"[cyan]工具数量:[/cyan] {len(tools)}\n"
+            f"[cyan]工具列表:[/cyan] {', '.join(tool_names[:3]) + '...' if len(tool_names) > 3 else ', '.join(tool_names)}",
             title="[bold green]✓ 客户端已连接[/bold green]",
             border_style="green"
         ))
-        _client_tools[client_id] = []
+        _client_tools[client_id] = tool_names
 
-    @gateway.on_client_disconnected
-    async def on_client_disconnected(client_id: str):
-        """Handle client disconnection."""
-        console.print(f"\n[bold red]✗ 客户端断开连接:[/bold red] {client_id}\n")
-
-    @gateway.on_tool_registered
-    async def on_tool_registered(client_id: str, tool_name: str):
-        """Handle tool registration."""
-        if client_id not in _client_tools:
-            _client_tools[client_id] = []
-        _client_tools[client_id].append(tool_name)
-
-        # When all tools are registered (assuming 6 tools)
-        if len(_client_tools[client_id]) == 6:
-            # Show tools table
+        # Show tools table
+        if tool_names:
             table = Table(title=f"客户端工具列表 ({client_id})", box=box.ROUNDED)
             table.add_column("工具名称", style="cyan", no_wrap=True)
-            table.add_column("命名空间", style="yellow")
 
-            tools = gateway.list_tools(client_id=client_id)
-            for tool in tools:
-                namespace, name = tool.full_name.split('.')
-                table.add_row(tool.full_name, namespace)
+            for tool_name in tool_names:
+                table.add_row(tool_name)
 
             console.print(table)
             console.print()
 
-            # Start demo asynchronously (don't block the registration callback)
+            # Start demo asynchronously
             asyncio.create_task(demo_tool_calls_enhanced(gateway, client_id))
+
+    def on_client_disconnected(client_id: str):
+        """Handle client disconnection."""
+        console.print(f"\n[bold red]✗ 客户端断开连接:[/bold red] {client_id}\n")
+        if client_id in _client_tools:
+            del _client_tools[client_id]
+
+    def on_tool_called(client_id: str, tool: str, args: dict, result):
+        """Handle tool call."""
+        # Optionally log tool calls
+        pass
+
+    # Register the event handlers
+    gateway.on("client_connected", on_client_connected)
+    gateway.on("client_disconnected", on_client_disconnected)
+    gateway.on("tool_called", on_tool_called)
 
     # Start Gateway
     console.print("[bold yellow]🌐 启动 Gateway 服务器[/bold yellow]")

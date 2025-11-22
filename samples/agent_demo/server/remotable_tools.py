@@ -12,10 +12,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-import remotable
-remotable.configure(role="server")
+import remotable_function
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,7 @@ class RemotableTools:
 
     def __init__(
         self,
-        gateway: Optional[remotable.Gateway] = None,
+        gateway: Optional[remotable_function.Gateway] = None,
         client_id: str = "ai-agent-tools",
         timeout: int = 30
     ):
@@ -55,7 +54,7 @@ class RemotableTools:
             self._initialized = True
             logger.info(f"Remotable Function Tools initialized for client: {self.client_id}")
 
-    def _get_gateway(self) -> remotable.Gateway:
+    def _get_gateway(self) -> remotable_function.Gateway:
         """获取 Gateway 实例（需要外部传入或创建）"""
         if self.gateway is None:
             raise RuntimeError(
@@ -63,7 +62,7 @@ class RemotableTools:
             )
         return self.gateway
 
-    def set_gateway(self, gateway: remotable.Gateway):
+    def set_gateway(self, gateway: remotable_function.Gateway):
         """设置 Gateway 实例"""
         self.gateway = gateway
         self._initialized = True

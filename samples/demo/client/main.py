@@ -11,12 +11,13 @@ import sys
 import os
 from datetime import datetime
 
-# Configure Remotable as client
-import remotable
-remotable.configure(role="client")
+# Add remotable_function to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+
+import remotable_function
 
 # Import built-in tools
-from remotable.client.tools import (
+from remotable_function.client.tools import (
     ReadFileTool,
     WriteFileTool,
     ListDirectoryTool,
@@ -25,8 +26,8 @@ from remotable.client.tools import (
 )
 
 # Import custom tool base
-from remotable.client.tool import Tool
-from remotable.core.types import ToolContext, ParameterSchema, ParameterType
+from remotable_function.client.tool import Tool
+from remotable_function.core.types import ToolContext, ParameterSchema, ParameterType
 
 # Rich console for beautiful output
 from rich.console import Console
@@ -151,7 +152,7 @@ async def main():
 
     # Create Client
     console.print("[bold yellow]🚀 创建客户端实例[/bold yellow]")
-    client = remotable.Client(
+    client = remotable_function.Client(
         server_url="ws://localhost:8000",
         client_id="demo-client",
         version="1.0.0",
@@ -161,8 +162,7 @@ async def main():
     )
     console.print("[green]✓[/green] 客户端创建成功\n")
 
-    # Register event handlers
-    @client.on_connected
+    # Register event handlers using v2.0 API
     async def on_connected():
         """Handle connection."""
         # Re-ensure test files exist after connection (handles any startup order)
@@ -183,49 +183,46 @@ async def main():
         table.add_column("命名空间", style="yellow")
 
         for tool_name in client.list_tools():
-            namespace, name = tool_name.split('.')
-            table.add_row(tool_name, namespace)
+            if '.' in tool_name:
+                namespace, name = tool_name.split('.')
+                table.add_row(tool_name, namespace)
+            else:
+                table.add_row(tool_name, "-")
 
         console.print(table)
         console.print()
         console.print("[dim]等待服务器调用工具...[/dim]\n")
 
-    @client.on_disconnected
     async def on_disconnected():
         """Handle disconnection."""
         console.print("\n[bold red]✗ 已断开连接[/bold red]\n")
 
-    @client.on_tool_executed
     async def on_tool_executed(tool_name: str, result):
         """Handle tool execution."""
         # 使用简洁的输出
         console.print(f"[green]→[/green] 执行工具: [cyan]{tool_name}[/cyan]")
 
-    @client.on_error
-    async def on_error(error):
-        """Handle errors."""
-        # Only show connection errors on first attempt
-        if "Connect call failed" in str(error):
-            console.print(f"\n[yellow]⚠️  服务器未启动[/yellow]")
-            console.print(f"[dim]等待服务器启动...[/dim]\n")
-        else:
-            console.print(f"[bold red]✗ 错误:[/bold red] {error}")
+    # Register the event handlers if the client supports them
+    if hasattr(client, 'on'):
+        client.on("connected", on_connected)
+        client.on("disconnected", on_disconnected)
+        client.on("tool_executed", on_tool_executed)
 
     # Register tools with progress
     console.print("[bold yellow]📦 注册工具[/bold yellow]")
 
     tools = [
-        ("filesystem.read_file", ReadFileTool()),
-        ("filesystem.write_file", WriteFileTool()),
-        ("filesystem.list_directory", ListDirectoryTool()),
-        ("filesystem.delete", DeleteFileTool()),
-        ("shell.execute", ShellExecuteTool()),
-        ("system.get_system_info", SystemInfoTool()),  # 自定义工具
+        ReadFileTool(),
+        WriteFileTool(),
+        ListDirectoryTool(),
+        DeleteFileTool(),
+        ShellExecuteTool(),
+        SystemInfoTool(),  # 自定义工具
     ]
 
-    for tool_name, tool_instance in tools:
-        client.register_tool(tool_instance)
-        console.print(f"  [green]✓[/green] {tool_name}")
+    for tool in tools:
+        client.register_tool(tool)
+        console.print(f"  [green]✓[/green] {tool.full_name}")
 
     console.print()
 

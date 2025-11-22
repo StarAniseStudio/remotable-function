@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "remotable-function"
-version = "1.3.0"
-description = "轻量级 RPC 通信组件 - 让服务器调用客户端工具像本地函数一样简单"
+version = "2.0.0"
+description = "Simple and efficient RPC framework for AI agents"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
@@ -59,10 +59,10 @@ Repository = "https://github.com/StarAniseStudio/remotable-function"
 Issues = "https://github.com/StarAniseStudio/remotable-function/issues"
 
 [tool.setuptools]
-packages = ["remotable", "remotable.core", "remotable.server", "remotable.client", "remotable.client.tools"]
+packages = ["remotable_function", "remotable_function.core", "remotable_function.server", "remotable_function.client", "remotable_function.client.tools"]
 
 [tool.setuptools.package-data]
-remotable = ["py.typed"]
+remotable_function = ["py.typed"]
 
 [tool.black]
 line-length = 100

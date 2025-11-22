@@ -25,10 +25,9 @@ if env_file.exists():
                 os.environ[key.strip()] = value.strip()
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-import remotable
-remotable.configure(role="server")
+import remotable_function
 
 from rich.console import Console
 from rich.panel import Panel
@@ -78,7 +77,7 @@ async def main():
 
     # Create Gateway
     console.print("[bold yellow]🚀 创建 Remotable Function Gateway[/bold yellow]")
-    gateway = remotable.Gateway(
+    gateway = remotable_function.Gateway(
         host="0.0.0.0",
         port=8000,
         heartbeat_interval=30,

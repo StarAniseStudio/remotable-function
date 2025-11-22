@@ -11,21 +11,20 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-# Add parent directory to path to import remotable
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add parent directory to path to import remotable_function
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-import remotable
-remotable.configure(role="client")
+import remotable_function
 
-from remotable.client.tools import (
+from remotable_function.client.tools import (
     ReadFileTool,
     WriteFileTool,
     ListDirectoryTool,
     DeleteFileTool,
     ShellExecuteTool,
 )
-from remotable.client.tool import Tool
-from remotable.core.types import ToolContext, ParameterSchema, ParameterType
+from remotable_function.client.tool import Tool
+from remotable_function.core.types import ToolContext, ParameterSchema, ParameterType
 
 from rich.console import Console
 from rich.panel import Panel
@@ -128,7 +127,7 @@ async def main():
 
     # Create Client
     console.print("[bold yellow]🚀 创建客户端实例[/bold yellow]")
-    client = remotable.Client(
+    client = remotable_function.Client(
         server_url="ws://localhost:8000",
         client_id="ai-agent-tools",
         version="1.0.0",

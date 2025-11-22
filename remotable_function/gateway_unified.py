@@ -357,7 +357,7 @@ class Gateway:
 
         # Check cache
         cache_key = None
-        if self.cache and tool_def.metadata.get("cacheable", False):
+        if self.cache and "cacheable" in tool_def.tags:
             import hashlib
             cache_key = hashlib.md5(
                 f"{client_id}:{tool}:{json.dumps(args or {}, sort_keys=True)}".encode()
@@ -370,8 +370,11 @@ class Gateway:
 
         # Create request
         request = RPCRequest(
-            method=tool,
-            params=args or {},
+            method="tool.execute",
+            params={
+                "tool": tool,
+                "args": args or {}
+            },
             id=str(uuid.uuid4())
         )
 
@@ -383,9 +386,7 @@ class Gateway:
 
         # Compress if enabled
         if self.compressor:
-            message, was_compressed = self.compressor.compress(message)
-            if was_compressed:
-                logger.debug(f"Compressed message for {tool}")
+            message = await self.compressor.compress_message(message)
 
         await connection.send(message)
 
@@ -451,10 +452,30 @@ class Gateway:
 
     # Event system (for backward compatibility)
 
-    def on(self, event: str, callback: callable) -> None:
-        """Register event callback."""
-        if event in self._callbacks:
-            self._callbacks[event].append(callback)
+    def on(self, event: str, callback: callable = None):
+        """
+        Register event callback.
+
+        Can be used as a method or decorator:
+            gateway.on("client_connected", callback)
+
+            @gateway.on("client_connected")
+            def callback(...):
+                pass
+        """
+        def decorator(func):
+            if event in self._callbacks:
+                self._callbacks[event].append(func)
+            return func
+
+        if callback is None:
+            # Used as decorator
+            return decorator
+        else:
+            # Used as method
+            if event in self._callbacks:
+                self._callbacks[event].append(callback)
+            return callback
 
     async def _emit(self, event: str, *args, **kwargs) -> None:
         """Emit event to registered callbacks."""

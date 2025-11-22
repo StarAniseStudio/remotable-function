@@ -420,15 +420,32 @@ class Client:
 
     # Event system
 
-    def on(self, event: str, callback: callable) -> callable:
+    def on(self, event: str, callback: callable = None):
         """
         Register event callback.
 
+        Can be used as a method or decorator:
+            client.on("connected", callback)
+
+            @client.on("connected")
+            async def callback():
+                pass
+
         Supported events: connected, disconnected, tool_executed, error
         """
-        if event in self._callbacks:
-            self._callbacks[event].append(callback)
-        return callback
+        def decorator(func):
+            if event in self._callbacks:
+                self._callbacks[event].append(func)
+            return func
+
+        if callback is None:
+            # Used as decorator
+            return decorator
+        else:
+            # Used as method
+            if event in self._callbacks:
+                self._callbacks[event].append(callback)
+            return callback
 
     async def _emit(self, event: str, *args, **kwargs) -> None:
         """Emit event to registered callbacks."""

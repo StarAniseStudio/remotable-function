@@ -4,84 +4,63 @@ __pycache__/
 *$py.class
 *.so
 .Python
+
+# Distribution / packaging
 build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-venv/
-env/
-ENV/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-htmlcov/
+MANIFEST
+
+# Testing
 .coverage
-*.log
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
 
-# Node.js (如果有相关项目)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json
-.npm
-*.tsbuildinfo
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
 
-# Environment variables
-.env
-.env.local
-.env.*.local
-!.env.example
-
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
-.claude/
 
-# Logs
-logs/
+# Project specific
 *.log
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Test coverage
-coverage/
-.nyc_output/
-.coverage.*
-htmlcov/
-.pytest_cache/
-.tox/
-junit.xml
-coverage.xml
-
-# Temporary files
+*.pid
+*.lock
+.cache/
 tmp/
 temp/
 
-# Demo test files (动态生成的测试文件)
-test_files
+# Documentation builds
+docs/_build/
+docs/site/
 
-
-# OS specific
-Thumbs.db
-
-
-PUBLISHING.md
-
-run_tests.sh
-
-tests
-
-pytest.ini
-
-release_github.sh
-
-ROADMAP.md
+# Local configuration
+.env
+.env.local
+config.local.py
+settings.local.py

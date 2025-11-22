@@ -11,7 +11,7 @@ import asyncio
 import os
 from typing import Optional
 
-from remotable_tools import RemotableTools
+from remotable_function_tools import RemotableTools
 
 
 class RemotableAgent:
