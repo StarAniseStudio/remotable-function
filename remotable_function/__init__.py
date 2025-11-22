@@ -26,7 +26,7 @@ from .client.tool import Tool
 
 # Configuration
 try:
-    from .config import GatewayConfig, ClientConfig
+    from .config import GatewayConfig, ClientConfig, ConnectionState
 except ImportError:
     # Provide stubs if config not available
     class GatewayConfig:
@@ -38,6 +38,13 @@ except ImportError:
         def __init__(self): pass
         @classmethod
         def from_url(cls, url): return cls()
+
+    class ConnectionState:
+        DISCONNECTED = "disconnected"
+        CONNECTING = "connecting"
+        CONNECTED = "connected"
+        RECONNECTING = "reconnecting"
+        FAILED = "failed"
 
 # Built-in tools
 from .client.tools.filesystem import FileSystemTool

@@ -64,3 +64,6 @@ docs/site/
 .env.local
 config.local.py
 settings.local.py
+test_simple.sh
+tests
+docs

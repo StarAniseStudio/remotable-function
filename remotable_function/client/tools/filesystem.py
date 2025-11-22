@@ -144,7 +144,7 @@ class SecureFileSystemTool(Tool):
                     f"Allowed: {[str(r) for r in self.allowed_roots]}"
                 )
 
-        logger.info(f"Path validated: {resolved}")
+        logger.debug(f"Path validated: {resolved}")
         return resolved
 
 

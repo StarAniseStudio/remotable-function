@@ -53,6 +53,8 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("agno").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
 logging.getLogger("remotable").setLevel(logging.INFO)
+# Suppress websockets handshake errors (usually from browser probes)
+logging.getLogger("websockets.server").setLevel(logging.CRITICAL)
 logging.getLogger("websockets").setLevel(logging.WARNING)
 
 
@@ -69,11 +71,20 @@ async def main():
     ))
     console.print()
 
-    # Check API key (optional for simple mode)
-    has_api_key = bool(os.getenv("OPENAI_API_KEY"))
-    if not has_api_key:
-        console.print("[yellow]⚠️  未设置 OPENAI_API_KEY[/yellow]")
-        console.print("[dim]将使用简化模式（基于关键词匹配）[/dim]\n")
+    # Check API keys (optional for simple mode)
+    has_openrouter = bool(os.getenv("OPENROUTER_API_KEY"))
+    has_openai = bool(os.getenv("OPENAI_API_KEY"))
+
+    if has_openrouter:
+        console.print("[green]✓ 检测到 OPENROUTER_API_KEY[/green]")
+        console.print("[dim]将使用 OpenRouter (Gemini 2.0 Flash) 模式[/dim]\n")
+    elif has_openai:
+        console.print("[green]✓ 检测到 OPENAI_API_KEY[/green]")
+        console.print("[dim]将使用 OpenAI (GPT-4o-mini) 模式[/dim]\n")
+    else:
+        console.print("[yellow]⚠️  未设置 API Key[/yellow]")
+        console.print("[dim]将使用简化模式（基于关键词匹配）[/dim]")
+        console.print("[dim]提示: 设置 OPENROUTER_API_KEY 或 OPENAI_API_KEY 启用 LLM 模式[/dim]\n")
 
     # Create Gateway
     console.print("[bold yellow]🚀 创建 Remotable Function Gateway[/bold yellow]")
@@ -85,23 +96,24 @@ async def main():
     )
     console.print("[green]✓[/green] Gateway 创建成功\n")
 
-    # Register Gateway event handlers
-    @gateway.on_client_connected
-    async def on_client_connected(client_id: str, client_info):
+    # Register Gateway event handlers (v2.0 API)
+    async def on_client_connected(client_id: str, tools: list):
         """Handle client connection."""
         console.print()
         console.print(Panel(
             f"[bold cyan]客户端ID:[/bold cyan] {client_id}\n"
-            f"[cyan]平台:[/cyan] {client_info.platform}\n"
-            f"[cyan]工具数量:[/cyan] {len(gateway.list_tools(client_id=client_id))}",
+            f"[cyan]工具数量:[/cyan] {len(tools)}",
             title="[bold green]✓ 客户端已连接[/bold green]",
             border_style="green"
         ))
 
-    @gateway.on_client_disconnected
     async def on_client_disconnected(client_id: str):
         """Handle client disconnection."""
         console.print(f"\n[bold red]✗ 客户端断开连接:[/bold red] {client_id}\n")
+
+    # Register event handlers using v2.0 API
+    gateway.on("client_connected", on_client_connected)
+    gateway.on("client_disconnected", on_client_disconnected)
 
     # Start Gateway
     console.print("[bold yellow]🌐 启动 Gateway 服务器[/bold yellow]")
@@ -129,8 +141,7 @@ async def main():
     console.print("[bold yellow]🤖 创建 AI Agent[/bold yellow]")
     agent = RemotableAgent(
         gateway=gateway,
-        client_id=client_id or "unknown",  # Will use first connected client
-        use_llm=has_api_key
+        client_id=client_id or "unknown"  # Will use first connected client
     )
     console.print("[green]✓[/green] Agent 创建成功\n")
 

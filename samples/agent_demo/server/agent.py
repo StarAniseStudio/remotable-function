@@ -11,7 +11,7 @@ import asyncio
 import os
 from typing import Optional
 
-from remotable_function_tools import RemotableTools
+from remotable_tools import RemotableTools
 
 
 class RemotableAgent:
@@ -24,8 +24,7 @@ class RemotableAgent:
     def __init__(
         self,
         gateway,
-        client_id: str,
-        use_llm: bool = True
+        client_id: str
     ):
         """
         初始化 Agent
@@ -33,11 +32,14 @@ class RemotableAgent:
         Args:
             gateway: Remotable Function Gateway 实例
             client_id: 目标客户端 ID
-            use_llm: 是否使用 LLM（需要 OPENAI_API_KEY）
         """
         self.gateway = gateway
         self.client_id = client_id
-        self.use_llm = use_llm and bool(os.getenv("OPENAI_API_KEY"))
+
+        # Check for API keys - OpenRouter or OpenAI
+        self.has_openrouter = bool(os.getenv("OPENROUTER_API_KEY"))
+        self.has_openai = bool(os.getenv("OPENAI_API_KEY"))
+        self.use_llm = self.has_openrouter or self.has_openai
 
         # Initialize tools
         self.tools = RemotableTools(gateway=gateway, client_id=client_id)
@@ -49,14 +51,20 @@ class RemotableAgent:
             self.llm_agent = None
 
     def _init_llm_agent(self):
-        """初始化 LLM Agent（Agno）"""
+        """初始化 LLM Agent（Agno）- 支持 OpenRouter 和 OpenAI"""
         try:
             from agno.agent import Agent
-            from agno.models.openai import OpenAIChat
+
+            from agno.models.openrouter import OpenRouter
+
+            model = OpenRouter(id="google/gemini-2.5-flash")
+            model_name = "OpenRouter (Gemini 2.5 Flash)"
+
+            print(f"使用模型: {model_name}")
 
             self.llm_agent = Agent(
                 name="RemotableAssistant",
-                model=OpenAIChat(id="gpt-4o-mini"),
+                model=model,
                 tools=self.tools.get_tool_functions(),
                 instructions=[
                     "你是一个 AI 助手，拥有远程执行工具的能力。",

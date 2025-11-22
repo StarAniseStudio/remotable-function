@@ -197,16 +197,57 @@ async def main():
         """Handle disconnection."""
         console.print("\n[bold red]✗ 已断开连接[/bold red]\n")
 
-    async def on_tool_executed(tool_name: str, result):
+    async def on_tool_executed(tool_name: str, args, result):
         """Handle tool execution."""
-        # 使用简洁的输出
-        console.print(f"[green]→[/green] 执行工具: [cyan]{tool_name}[/cyan]")
+        # 使用简洁的输出（静默，避免干扰UI）
+        pass
 
     # Register the event handlers if the client supports them
     if hasattr(client, 'on'):
         client.on("connected", on_connected)
         client.on("disconnected", on_disconnected)
         client.on("tool_executed", on_tool_executed)
+
+    # ========================================
+    # 🪝 注册工具调用 Hooks（v2.0 新功能演示）
+    # ========================================
+
+    # Hook 统计数据
+    hook_stats = {"calls": 0, "errors": 0}
+
+    # Hook 1: 执行前记录
+    async def on_before_execute(tool_name: str, args, _context):
+        """工具执行前的 hook - 记录调用信息"""
+        hook_stats["calls"] += 1
+        console.print(f"[cyan]🪝 [BEFORE][/cyan] 工具: [bold]{tool_name}[/bold]")
+        # 显示部分参数（避免过长）
+        args_preview = str(args)[:60] + "..." if len(str(args)) > 60 else str(args)
+        console.print(f"[dim]   参数: {args_preview}[/dim]")
+
+    # Hook 2: 执行后记录结果
+    async def on_after_execute(tool_name: str, _args, result, _context):
+        """工具执行后的 hook - 记录成功结果"""
+        console.print(f"[green]🪝 [AFTER][/green] 工具: [bold]{tool_name}[/bold] - ✅ 成功")
+        # 显示部分结果
+        result_preview = str(result)[:60] + "..." if len(str(result)) > 60 else str(result)
+        console.print(f"[dim]   结果: {result_preview}[/dim]\n")
+
+    # Hook 3: 错误捕获
+    async def on_tool_error(tool_name: str, _args, error, _context):
+        """工具执行失败的 hook - 记录错误"""
+        hook_stats["errors"] += 1
+        console.print(f"[red]🪝 [ERROR][/red] 工具: [bold]{tool_name}[/bold] - ❌ 失败")
+        console.print(f"[dim]   错误: {error}[/dim]\n")
+
+    # 注册新的 v2.0 hooks
+    client.on("before_tool_execute", on_before_execute)
+    client.on("after_tool_execute", on_after_execute)
+    client.on("tool_error", on_tool_error)
+
+    console.print("[bold yellow]🪝 已注册工具调用 Hooks[/bold yellow]")
+    console.print("[dim]  - before_tool_execute (执行前)[/dim]")
+    console.print("[dim]  - after_tool_execute (执行后)[/dim]")
+    console.print("[dim]  - tool_error (错误捕获)[/dim]\n")
 
     # Register tools with progress
     console.print("[bold yellow]📦 注册工具[/bold yellow]")

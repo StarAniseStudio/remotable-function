@@ -17,6 +17,15 @@ class LogLevel(Enum):
     ERROR = "ERROR"
 
 
+class ConnectionState(Enum):
+    """Connection states for better state management."""
+    DISCONNECTED = "disconnected"
+    CONNECTING = "connecting"
+    CONNECTED = "connected"
+    RECONNECTING = "reconnecting"
+    FAILED = "failed"
+
+
 @dataclass
 class SecurityConfig:
     """Security configuration."""
@@ -56,8 +65,14 @@ class NetworkConfig:
     ssl_key: Optional[str] = None
     ping_interval: int = 30
     ping_timeout: int = 10
-    reconnect_interval: int = 5
+
+    # Reconnection settings (exponential backoff + jitter)
+    reconnect_interval: int = 5  # Deprecated: use reconnect_base_delay
     reconnect_max_attempts: int = 10
+    reconnect_base_delay: float = 1.0  # Base delay for exponential backoff (seconds)
+    reconnect_max_delay: float = 60.0  # Maximum delay between retries (seconds)
+    reconnect_multiplier: float = 2.0  # Exponential backoff multiplier
+    reconnect_jitter: float = 0.3  # Jitter factor (0.0 - 1.0)
 
 
 @dataclass

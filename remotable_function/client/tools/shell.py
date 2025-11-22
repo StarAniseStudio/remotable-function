@@ -158,7 +158,7 @@ class ShellExecuteTool(Tool):
                     f"Command does not match any allowed patterns"
                 )
 
-        logger.info(f"Command validated: {command[:50]}...")
+        logger.debug(f"Command validated: {command[:50]}...")
 
     async def execute(self, context: ToolContext, **kwargs) -> Dict[str, Any]:
         """

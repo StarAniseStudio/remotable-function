@@ -125,17 +125,18 @@ async def main():
     ))
     console.print()
 
-    # Create Client
+    # Create Client with auto-reconnect (exponential backoff + jitter)
     console.print("[bold yellow]🚀 创建客户端实例[/bold yellow]")
     client = remotable_function.Client(
         server_url="ws://localhost:8000",
         client_id="ai-agent-tools",
         version="1.0.0",
         auto_reconnect=True,
-        reconnect_interval=5,
+        reconnect_interval=5,  # Deprecated, kept for compatibility
         reconnect_max_attempts=10
     )
-    console.print("[green]✓[/green] 客户端创建成功\n")
+    console.print("[green]✓[/green] 客户端创建成功")
+    console.print("[dim]   自动重连: 已启用（指数退避 + 抖动）[/dim]\n")
 
     # Register tools
     console.print("[bold yellow]🔧 注册工具[/bold yellow]")
@@ -150,8 +151,7 @@ async def main():
     client.register_tools(*tools)
     console.print(f"[green]✓[/green] 已注册 {len(tools)} 个工具\n")
 
-    # Register event handlers
-    @client.on_connected
+    # Register event handlers (v2.0 API)
     async def on_connected():
         """Handle connection."""
         console.print()
@@ -176,15 +176,51 @@ async def main():
         console.print()
         console.print("[dim]等待 AI Agent 调用工具...[/dim]\n")
 
-    @client.on_disconnected
     async def on_disconnected():
         """Handle disconnection."""
         console.print("\n[bold red]✗ 已断开连接[/bold red]\n")
 
-    @client.on_tool_executed
-    async def on_tool_executed(tool_name: str, result):
+    async def on_reconnecting(event_data):
+        """Handle reconnection attempts."""
+        attempt = event_data.get("attempt", 0)
+        wait_time = event_data.get("wait_time", 0)
+        max_attempts = event_data.get("max_attempts", 0)
+
+        console.print(
+            f"[yellow]🔄 正在重连...[/yellow] "
+            f"[dim](第 {attempt}/{max_attempts} 次，等待 {wait_time:.1f}s)[/dim]"
+        )
+
+    async def on_reconnect_failed(event_data):
+        """Handle reconnection failure."""
+        attempt = event_data.get("attempt", 0)
+        error = event_data.get("error", "Unknown error")
+
+        console.print(
+            f"[red]  ✗ 第 {attempt} 次重连失败:[/red] [dim]{error}[/dim]"
+        )
+
+    async def on_reconnect_stopped(event_data):
+        """Handle reconnection stopped."""
+        reason = event_data.get("reason", "unknown")
+        attempts = event_data.get("attempts", 0)
+
+        console.print(
+            f"\n[bold red]🛑 重连已停止[/bold red] "
+            f"[dim](原因: {reason}, 共尝试 {attempts} 次)[/dim]\n"
+        )
+
+    async def on_tool_executed(tool_name: str, args, result):
         """Handle tool execution."""
         console.print(f"[green]✓[/green] 工具已执行: [cyan]{tool_name}[/cyan]")
+
+    # Register event handlers using v2.0 API
+    client.on("connected", on_connected)
+    client.on("disconnected", on_disconnected)
+    client.on("reconnecting", on_reconnecting)
+    client.on("reconnect_failed", on_reconnect_failed)
+    client.on("reconnect_stopped", on_reconnect_stopped)
+    client.on("tool_executed", on_tool_executed)
 
     # Connect to Gateway
     console.print("[bold yellow]🔗 连接到 Gateway[/bold yellow]")

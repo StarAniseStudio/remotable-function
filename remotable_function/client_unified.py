@@ -7,13 +7,15 @@ A clean, unified RPC client that combines the best of both implementations.
 import asyncio
 import json
 import logging
+import random
+import time
 import uuid
 from typing import Optional, Dict, Any, List, Union
 
 import websockets
 from websockets.client import WebSocketClientProtocol
 
-from .config import ClientConfig
+from .config import ClientConfig, ConnectionState
 from .client.tool import Tool
 from .core.protocol import RPCRequest, RPCResponse
 
@@ -74,6 +76,16 @@ class Client:
             if auto_reconnect is not None:
                 config.auto_reconnect = auto_reconnect
 
+            # Process additional kwargs for backward compatibility
+            if 'reconnect_max_attempts' in kwargs:
+                config.network.reconnect_max_attempts = kwargs['reconnect_max_attempts']
+            if 'reconnect_interval' in kwargs:
+                # Deprecated parameter - map to reconnect_base_delay
+                config.network.reconnect_base_delay = float(kwargs['reconnect_interval'])
+            if 'version' in kwargs:
+                # Store version if provided (for backward compatibility)
+                pass  # Version is typically informational
+
         elif isinstance(config, str):
             # Treat string as server URL
             config = ClientConfig(server_url=config)
@@ -96,15 +108,23 @@ class Client:
         # Connection state
         self._websocket: Optional[WebSocketClientProtocol] = None
         self._connected = False
+        self._state = ConnectionState.DISCONNECTED
         self._receive_task: Optional[asyncio.Task] = None
         self._heartbeat_task: Optional[asyncio.Task] = None
         self._reconnect_attempts = 0
+        self._last_pong_time = 0.0
 
         # Event callbacks
         self._callbacks: Dict[str, list] = {
             "connected": [],
             "disconnected": [],
-            "tool_executed": [],
+            "reconnecting": [],  # 重连开始
+            "reconnect_failed": [],  # 单次重连失败
+            "reconnect_stopped": [],  # 重连终止
+            "before_tool_execute": [],  # 工具执行前的 hook
+            "tool_executed": [],  # 工具执行后的 hook (保持向后兼容)
+            "after_tool_execute": [],  # 工具执行后的 hook (别名)
+            "tool_error": [],  # 工具执行失败的 hook
             "error": []
         }
 
@@ -161,6 +181,31 @@ class Client:
         try:
             logger.info(f"Connecting to {self.config.server_url}...")
 
+            # Clean up any existing websocket connection before reconnecting
+            if self._websocket:
+                try:
+                    await self._websocket.close()
+                except Exception:
+                    pass
+                self._websocket = None
+
+            # Cancel any existing background tasks before reconnecting
+            if hasattr(self, '_receive_task') and self._receive_task:
+                self._receive_task.cancel()
+                try:
+                    await self._receive_task
+                except asyncio.CancelledError:
+                    pass
+                self._receive_task = None
+
+            if hasattr(self, '_heartbeat_task') and self._heartbeat_task:
+                self._heartbeat_task.cancel()
+                try:
+                    await self._heartbeat_task
+                except asyncio.CancelledError:
+                    pass
+                self._heartbeat_task = None
+
             # Connect WebSocket
             self._websocket = await websockets.connect(
                 self.config.server_url,
@@ -173,7 +218,9 @@ class Client:
             await self._register()
 
             self._connected = True
+            self._state = ConnectionState.CONNECTED
             self._reconnect_attempts = 0
+            self._last_pong_time = time.time()  # Initialize heartbeat timer
 
             # Start background tasks
             self._receive_task = asyncio.create_task(self._receive_loop())
@@ -287,8 +334,8 @@ class Client:
         try:
             async for message in self._websocket:
                 await self._handle_message(json.loads(message))
-        except websockets.exceptions.ConnectionClosed:
-            logger.info("Connection closed by server")
+        except websockets.exceptions.ConnectionClosed as e:
+            logger.info(f"Connection closed by server: {e}")
             self._connected = False
             await self._emit("disconnected")
 
@@ -299,14 +346,28 @@ class Client:
             logger.error(f"Receive error: {e}")
             self._connected = False
             await self._emit("error", e)
+        finally:
+            # Ensure disconnected event is emitted even if loop exits normally
+            if self._connected:
+                logger.info("Receive loop ended while still connected, triggering disconnect")
+                self._connected = False
+                await self._emit("disconnected")
+
+                # Auto-reconnect if enabled
+                if self.config.auto_reconnect:
+                    await self._reconnect()
 
     async def _handle_message(self, data: Dict[str, Any]) -> None:
         """Handle message from server."""
         try:
             method = data.get("method")
 
-            # Tool invocation
-            if method in self._tools:
+            # Tool invocation - v2.0 format: {"method": "tool.execute", "params": {"tool": "...", "args": {...}}}
+            if method == "tool.execute":
+                await self._execute_tool_v2(data)
+
+            # Tool invocation - v1.x format: {"method": "tool_name", "params": {...}}
+            elif method in self._tools:
                 await self._execute_tool(data)
 
             # Ping/heartbeat
@@ -335,14 +396,91 @@ class Client:
                     "id": data["id"]
                 }))
 
+    async def _execute_tool_v2(self, request: Dict[str, Any]) -> None:
+        """Execute tool using v2.0 protocol format."""
+        params = request.get("params", {})
+        tool_name = params.get("tool")
+        args = params.get("args", {})
+        request_id = request.get("id")
+
+        try:
+            # Get tool
+            tool = self._tools.get(tool_name)
+            if not tool:
+                raise ValueError(f"Tool not found: {tool_name}")
+
+            # Create context
+            from remotable_function.core.types import ToolContext
+            context = ToolContext(
+                client_id=self.client_id,
+                request_id=request_id,
+                timestamp=0,
+                metadata={}
+            )
+
+            # 🪝 Emit before_tool_execute hook
+            # Hook can modify args or cancel execution by raising exception
+            await self._emit("before_tool_execute", tool_name, args, context)
+
+            # Execute tool with context
+            if asyncio.iscoroutinefunction(tool.execute):
+                result = await tool.execute(context, **args)
+            else:
+                # Run sync tool in executor
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(None, lambda: tool.execute(context, **args))
+
+            # Send success response
+            response = {
+                "jsonrpc": "2.0",
+                "result": result,
+                "id": request_id
+            }
+
+            await self._websocket.send(json.dumps(response))
+
+            # 🪝 Emit after_tool_execute hooks
+            await self._emit("tool_executed", tool_name, args, result)  # 向后兼容
+            await self._emit("after_tool_execute", tool_name, args, result, context)
+
+        except Exception as e:
+            logger.error(f"Tool execution error ({tool_name}): {e}")
+
+            # 🪝 Emit tool_error hook
+            await self._emit("tool_error", tool_name, args, e, context if 'context' in locals() else None)
+
+            # Send error response
+            response = {
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": -32603,
+                    "message": str(e)
+                },
+                "id": request_id
+            }
+
+            await self._websocket.send(json.dumps(response))
+
     async def _execute_tool(self, request: Dict[str, Any]) -> None:
-        """Execute tool and send response."""
+        """Execute tool and send response (v1.x format - backward compatibility)."""
         method = request["method"]
         params = request.get("params", {})
         request_id = request.get("id")
 
         try:
             tool = self._tools[method]
+
+            # Create context for v1.x format
+            from remotable_function.core.types import ToolContext
+            context = ToolContext(
+                client_id=self.client_id,
+                request_id=request_id,
+                timestamp=0,
+                metadata={}
+            )
+
+            # 🪝 Emit before_tool_execute hook
+            await self._emit("before_tool_execute", method, params, context)
 
             # Execute tool
             if asyncio.iscoroutinefunction(tool.execute):
@@ -359,11 +497,15 @@ class Client:
                 "id": request_id
             }
 
-            # Emit event
-            await self._emit("tool_executed", method, params, result)
+            # 🪝 Emit after_tool_execute hooks
+            await self._emit("tool_executed", method, params, result)  # 向后兼容
+            await self._emit("after_tool_execute", method, params, result, context)
 
         except Exception as e:
             logger.error(f"Tool execution error: {e}")
+
+            # 🪝 Emit tool_error hook
+            await self._emit("tool_error", method, params, e, context if 'context' in locals() else None)
 
             # Send error response
             response = {
@@ -378,11 +520,28 @@ class Client:
         await self._websocket.send(json.dumps(response))
 
     async def _heartbeat_loop(self) -> None:
-        """Send periodic heartbeat to server."""
+        """
+        Send periodic heartbeat to server with timeout detection.
+
+        Monitors connection health and triggers reconnection if heartbeat times out.
+        """
         interval = self.config.network.ping_interval
+        timeout_threshold = interval + self.config.network.ping_timeout
 
         while self._connected:
             try:
+                # Check for heartbeat timeout first
+                elapsed = time.time() - self._last_pong_time
+                if elapsed > timeout_threshold:
+                    logger.warning(
+                        f"Heartbeat timeout ({elapsed:.1f}s > {timeout_threshold}s), "
+                        f"triggering reconnect"
+                    )
+                    self._connected = False
+                    if self.config.auto_reconnect:
+                        await self._reconnect()
+                    return
+
                 await asyncio.sleep(interval)
 
                 # Send heartbeat
@@ -396,27 +555,91 @@ class Client:
 
                 logger.debug("Heartbeat sent")
 
+                # Update last pong time (assume immediate response for now)
+                # TODO: Implement actual pong response handling
+                self._last_pong_time = time.time()
+
             except Exception as e:
                 logger.error(f"Heartbeat error: {e}")
                 break
 
+    def _calculate_backoff(self) -> float:
+        """
+        Calculate exponential backoff with jitter.
+
+        Uses exponential backoff algorithm recommended by AWS/gRPC:
+        delay = min(max_delay, base_delay * (multiplier ^ attempts)) * (1 ± jitter)
+
+        Returns:
+            float: Wait time in seconds
+        """
+        base_delay = self.config.network.reconnect_base_delay
+        max_delay = self.config.network.reconnect_max_delay
+        multiplier = self.config.network.reconnect_multiplier
+        jitter = self.config.network.reconnect_jitter
+
+        # Exponential backoff
+        delay = base_delay * (multiplier ** self._reconnect_attempts)
+
+        # Cap at maximum delay
+        delay = min(delay, max_delay)
+
+        # Add jitter (random variation ±jitter%)
+        jitter_range = delay * jitter
+        delay = delay + random.uniform(-jitter_range, jitter_range)
+
+        # Ensure minimum delay
+        return max(0.1, delay)
+
     async def _reconnect(self) -> None:
-        """Attempt to reconnect to server."""
-        if self._reconnect_attempts >= self.config.network.reconnect_max_attempts:
-            logger.error("Max reconnection attempts reached")
-            return
+        """
+        Attempt to reconnect to server with exponential backoff.
 
-        self._reconnect_attempts += 1
-        wait_time = self.config.network.reconnect_interval * self._reconnect_attempts
+        Uses loop instead of recursion to avoid stack overflow.
+        Implements exponential backoff + jitter strategy.
+        """
+        self._state = ConnectionState.RECONNECTING
 
-        logger.info(f"Reconnecting in {wait_time}s (attempt {self._reconnect_attempts})...")
-        await asyncio.sleep(wait_time)
+        while self._reconnect_attempts < self.config.network.reconnect_max_attempts:
+            self._reconnect_attempts += 1
+            wait_time = self._calculate_backoff()
 
-        try:
-            await self.connect()
-        except Exception as e:
-            logger.error(f"Reconnection failed: {e}")
-            await self._reconnect()
+            logger.info(
+                f"Reconnecting in {wait_time:.1f}s "
+                f"(attempt {self._reconnect_attempts}/{self.config.network.reconnect_max_attempts})"
+            )
+
+            # Emit reconnecting event
+            await self._emit("reconnecting", {
+                "attempt": self._reconnect_attempts,
+                "wait_time": wait_time,
+                "max_attempts": self.config.network.reconnect_max_attempts
+            })
+
+            await asyncio.sleep(wait_time)
+
+            try:
+                await self.connect()
+                logger.info("Reconnection successful")
+                self._reconnect_attempts = 0  # Reset on success
+                return
+
+            except Exception as e:
+                logger.error(f"Reconnection attempt {self._reconnect_attempts} failed: {e}")
+                await self._emit("reconnect_failed", {
+                    "attempt": self._reconnect_attempts,
+                    "error": str(e)
+                })
+
+        # Max attempts reached
+        self._state = ConnectionState.FAILED
+        logger.error(
+            f"Max reconnection attempts ({self.config.network.reconnect_max_attempts}) reached"
+        )
+        await self._emit("reconnect_stopped", {
+            "reason": "max_attempts_reached",
+            "attempts": self._reconnect_attempts
+        })
 
     # Event system
 
