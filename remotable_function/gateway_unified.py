@@ -307,6 +307,10 @@ class Gateway:
             if connection:
                 connection.update_heartbeat()
 
+        elif method == "call_tool":
+            # Client calling server tool - Execute local tool
+            await self._handle_client_tool_call(client_id, data)
+
         elif method == "response" or "result" in data or "error" in data:
             # Response to our tool invocation
             request_id = data.get("id")
@@ -316,6 +320,64 @@ class Gateway:
                 future = connection.pending_requests.pop(request_id)
                 if not future.done():
                     future.set_result(data)
+
+    async def _handle_client_tool_call(self, client_id: str, data: Dict[str, Any]) -> None:
+        """Handle tool call from client to server."""
+        request_id = data.get("id")
+        params = data.get("params", {})
+        tool_name = params.get("tool", "")
+        args = params.get("args", {})
+
+        connection = self.manager.get(client_id)
+        if not connection:
+            return
+
+        try:
+            # Look for server-side tool
+            server_tools = getattr(self, '_server_tools', {})
+            tool_instance = server_tools.get(tool_name)
+
+            if not tool_instance:
+                # Send error response
+                await connection.websocket.send(json.dumps({
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "error": {
+                        "code": RPCErrorCode.TOOL_NOT_FOUND,
+                        "message": f"Tool '{tool_name}' not found"
+                    }
+                }))
+                return
+
+            # Execute the tool
+            from .core.types import ToolContext
+            context = ToolContext(
+                client_id=client_id,
+                request_id=request_id,
+                timestamp=datetime.now(),
+                metadata={}
+            )
+
+            result = await tool_instance.execute(context, **args)
+
+            # Send success response
+            await connection.websocket.send(json.dumps({
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": result
+            }))
+
+        except Exception as e:
+            # Send error response
+            logger.error(f"Tool execution error: {e}")
+            await connection.websocket.send(json.dumps({
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "error": {
+                    "code": RPCErrorCode.TOOL_EXECUTION_FAILED,
+                    "message": str(e)
+                }
+            }))
 
     async def call_tool(
         self,

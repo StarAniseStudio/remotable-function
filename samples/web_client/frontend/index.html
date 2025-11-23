@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remotable Function - Web Client Demo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>🌐 Remotable Function</h1>
+            <p class="subtitle">JavaScript Client Demo - Connecting to Python Backend</p>
+        </header>
+
+        <!-- Connection Status -->
+        <div class="status-panel">
+            <div class="status-item">
+                <span class="label">Connection:</span>
+                <span id="connection-status" class="status disconnected">Disconnected</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Client ID:</span>
+                <span id="client-id">-</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Server:</span>
+                <span id="server-url">ws://localhost:8765</span>
+            </div>
+        </div>
+
+        <!-- Server Message Area -->
+        <div class="message-box">
+            <h3>📨 Message from Server</h3>
+            <div id="server-message" class="server-message">
+                Waiting for connection...
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="content-grid">
+
+            <!-- Left Panel: Call Python Tools -->
+            <div class="panel">
+                <h2>🐍 Call Python Tools</h2>
+                <p class="panel-description">Test calling Python backend tools from JavaScript</p>
+
+                <!-- Get Time Tool -->
+                <div class="tool-section">
+                    <h3>⏰ Get Server Time</h3>
+                    <div class="form-group">
+                        <label for="time-format">Format:</label>
+                        <select id="time-format">
+                            <option value="iso">ISO Format</option>
+                            <option value="unix">Unix Timestamp</option>
+                            <option value="human">Human Readable</option>
+                            <option value="detailed">Detailed</option>
+                        </select>
+                    </div>
+                    <button onclick="callGetTime()" class="btn btn-primary">Get Time</button>
+                    <div id="time-result" class="result"></div>
+                </div>
+
+                <!-- Calculator Tool -->
+                <div class="tool-section">
+                    <h3>🔢 Calculator</h3>
+                    <div class="form-group">
+                        <label for="calc-expression">Expression:</label>
+                        <input type="text" id="calc-expression" placeholder="2 + 2" value="10 * 5">
+                    </div>
+                    <button onclick="callCalculate()" class="btn btn-primary">Calculate</button>
+                    <div id="calc-result" class="result"></div>
+                </div>
+
+                <!-- Echo Tool -->
+                <div class="tool-section">
+                    <h3>📣 Echo Message</h3>
+                    <div class="form-group">
+                        <label for="echo-message">Message:</label>
+                        <input type="text" id="echo-message" placeholder="Hello from JavaScript!" value="Hello from JavaScript!">
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="echo-uppercase">
+                            Convert to Uppercase
+                        </label>
+                    </div>
+                    <button onclick="callEcho()" class="btn btn-primary">Echo</button>
+                    <div id="echo-result" class="result"></div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Logs -->
+            <div class="panel">
+                <h2>📋 Activity Log</h2>
+                <p class="panel-description">Real-time communication log</p>
+                <div id="log-container" class="log-container"></div>
+                <button onclick="clearLog()" class="btn btn-secondary">Clear Log</button>
+            </div>
+
+        </div>
+
+        <!-- Browser Tools Panel -->
+        <div class="panel browser-tools">
+            <h2>🌐 JavaScript Tools (Available to Python)</h2>
+            <p class="panel-description">These tools are registered and can be called by the Python backend</p>
+            <div class="tools-list">
+                <div class="tool-item">
+                    <span class="tool-name">browser.show_notification</span>
+                    <span class="tool-desc">Show browser notifications</span>
+                </div>
+                <div class="tool-item">
+                    <span class="tool-name">browser.update_dom</span>
+                    <span class="tool-desc">Update DOM elements</span>
+                </div>
+                <div class="tool-item">
+                    <span class="tool-name">browser.get_info</span>
+                    <span class="tool-desc">Get browser information</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>Remotable Function v2.0 - Python Backend + JavaScript Frontend Demo</p>
+            <p>WebSocket connection using JSON-RPC 2.0 protocol</p>
+        </footer>
+    </div>
+
+    <!-- Load JavaScript -->
+    <script src="client.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
