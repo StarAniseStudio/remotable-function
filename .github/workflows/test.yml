@@ -76,8 +76,8 @@ jobs:
           pip install black mypy
 
       - name: Format check
-        run: black --check remotable/ || (echo "Code formatting check failed. Run 'black remotable/' to fix." && exit 1)
+        run: black --check remotable_function/ || (echo "Code formatting check failed. Run 'black remotable_function/' to fix." && exit 1)
 
       - name: Type check
-        run: mypy remotable/ || echo "Type checking completed with warnings"
+        run: mypy remotable_function/ || echo "Type checking completed with warnings"
 
