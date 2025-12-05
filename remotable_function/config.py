@@ -11,6 +11,7 @@ from enum import Enum
 
 class LogLevel(Enum):
     """Log levels."""
+
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -19,6 +20,7 @@ class LogLevel(Enum):
 
 class ConnectionState(Enum):
     """Connection states for better state management."""
+
     DISCONNECTED = "disconnected"
     CONNECTING = "connecting"
     CONNECTED = "connected"
@@ -99,28 +101,22 @@ class GatewayConfig:
     name: str = "remotable-gateway"
 
     @classmethod
-    def development(cls) -> 'GatewayConfig':
+    def development(cls) -> "GatewayConfig":
         """Development configuration (insecure, verbose)."""
         return cls(
             security=SecurityConfig(require_auth=False),
             performance=PerformanceConfig(enable_cache=False),
-            log_level=LogLevel.DEBUG
+            log_level=LogLevel.DEBUG,
         )
 
     @classmethod
-    def production(cls) -> 'GatewayConfig':
+    def production(cls) -> "GatewayConfig":
         """Production configuration (secure, optimized)."""
         return cls(
             network=NetworkConfig(host="0.0.0.0"),
-            security=SecurityConfig(
-                require_auth=True,
-                enable_rate_limit=True
-            ),
-            performance=PerformanceConfig(
-                enable_cache=True,
-                enable_compression=True
-            ),
-            log_level=LogLevel.WARNING
+            security=SecurityConfig(require_auth=True, enable_rate_limit=True),
+            performance=PerformanceConfig(enable_cache=True, enable_compression=True),
+            log_level=LogLevel.WARNING,
         )
 
 
@@ -150,7 +146,7 @@ class ClientConfig:
     auto_reconnect: bool = True
 
     @classmethod
-    def from_url(cls, url: str, **kwargs) -> 'ClientConfig':
+    def from_url(cls, url: str, **kwargs) -> "ClientConfig":
         """Create config from URL."""
         config = cls(server_url=url)
         for key, value in kwargs.items():
@@ -167,7 +163,7 @@ PRESETS = {
     "testing": GatewayConfig(
         network=NetworkConfig(port=0),  # Random port
         security=SecurityConfig(require_auth=False),
-        log_level=LogLevel.ERROR
+        log_level=LogLevel.ERROR,
     ),
 }
 

@@ -24,7 +24,12 @@ from .ratelimit import (
 )
 from .events import EventEmitter, EventPriority, EventHandler
 from .cache import LRUCache, ResponseCache, CacheStats
-from .compression import MessageCompressor, CompressionStats, create_compressed_message, extract_compressed_message
+from .compression import (
+    MessageCompressor,
+    CompressionStats,
+    create_compressed_message,
+    extract_compressed_message,
+)
 from .exceptions import (
     RemotableError,
     ConnectionError,

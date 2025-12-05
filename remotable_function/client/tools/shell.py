@@ -34,12 +34,12 @@ class ShellExecuteTool(Tool):
 
     # Default dangerous command patterns
     DEFAULT_DENY_PATTERNS = [
-        re.compile(r'rm\s+(-rf?|--recursive)'),  # Recursive delete
-        re.compile(r'dd\s+if=/dev/(zero|random)'),  # Disk wipe
-        re.compile(r':(){ :|:& };:'),  # Fork bomb
-        re.compile(r'mkfs\.'),  # Format filesystem
-        re.compile(r'\||\|\||&&|;|`|\$\('),  # Command chaining (in some contexts)
-        re.compile(r'>>\s*/etc/|>\s*/etc/'),  # Write to /etc
+        re.compile(r"rm\s+(-rf?|--recursive)"),  # Recursive delete
+        re.compile(r"dd\s+if=/dev/(zero|random)"),  # Disk wipe
+        re.compile(r":(){ :|:& };:"),  # Fork bomb
+        re.compile(r"mkfs\."),  # Format filesystem
+        re.compile(r"\||\|\||&&|;|`|\$\("),  # Command chaining (in some contexts)
+        re.compile(r">>\s*/etc/|>\s*/etc/"),  # Write to /etc
     ]
 
     def __init__(
@@ -76,7 +76,9 @@ class ShellExecuteTool(Tool):
             self.allowed_commands = allowed_commands
 
         self.allowed_patterns = allowed_patterns or []
-        self.deny_patterns = deny_patterns if deny_patterns is not None else self.DEFAULT_DENY_PATTERNS
+        self.deny_patterns = (
+            deny_patterns if deny_patterns is not None else self.DEFAULT_DENY_PATTERNS
+        )
         self.allow_shell_operators = allow_shell_operators
 
     parameters = [
@@ -119,7 +121,7 @@ class ShellExecuteTool(Tool):
 
         # Check shell operators if not allowed
         if not self.allow_shell_operators:
-            dangerous_chars = ['|', '&', ';', '`', '$(',')']
+            dangerous_chars = ["|", "&", ";", "`", "$(", ")"]
             for char in dangerous_chars:
                 if char in command:
                     raise PermissionError(
@@ -141,7 +143,7 @@ class ShellExecuteTool(Tool):
                 if not parts:
                     raise PermissionError("Empty command")
 
-                cmd_name = parts[0].split('/')[-1]  # Get command name without path
+                cmd_name = parts[0].split("/")[-1]  # Get command name without path
 
                 if cmd_name not in self.allowed_commands:
                     raise PermissionError(
@@ -154,9 +156,7 @@ class ShellExecuteTool(Tool):
         # Check allowed patterns (if specified)
         if self.allowed_patterns:
             if not any(pattern.search(command) for pattern in self.allowed_patterns):
-                raise PermissionError(
-                    f"Command does not match any allowed patterns"
-                )
+                raise PermissionError(f"Command does not match any allowed patterns")
 
         logger.debug(f"Command validated: {command[:50]}...")
 
@@ -202,7 +202,7 @@ class ShellExecuteTool(Tool):
                         *args,
                         stdout=asyncio.subprocess.PIPE,
                         stderr=asyncio.subprocess.PIPE,
-                        cwd=cwd
+                        cwd=cwd,
                     )
                 except (ValueError, OSError) as e:
                     # Fall back to shell if parsing fails or command not found
@@ -211,15 +211,12 @@ class ShellExecuteTool(Tool):
                         command,
                         stdout=asyncio.subprocess.PIPE,
                         stderr=asyncio.subprocess.PIPE,
-                        cwd=cwd
+                        cwd=cwd,
                     )
             else:
                 # Use shell if operators are explicitly allowed
                 process = await asyncio.create_subprocess_shell(
-                    command,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                    cwd=cwd
+                    command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=cwd
                 )
 
             # Wait for completion with timeout
@@ -247,6 +244,7 @@ class ShellExecuteTool(Tool):
             raise PermissionError(f"Permission denied to execute: {command}")
         except Exception as e:
             raise Exception(f"Failed to execute command: {e}")
+
 
 # Alias for backward compatibility
 ShellTool = ShellExecuteTool

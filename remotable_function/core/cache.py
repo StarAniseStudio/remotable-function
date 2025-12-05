@@ -158,9 +158,7 @@ class LRUCache:
             logger.debug(f"Cache hit: {key} (hits={entry.hits})")
             return entry.value
 
-    async def set(
-        self, key: str, value: Any, ttl: Optional[float] = None
-    ) -> None:
+    async def set(self, key: str, value: Any, ttl: Optional[float] = None) -> None:
         """
         Set value in cache.
 
@@ -245,9 +243,7 @@ class LRUCache:
     async def _cleanup_expired(self) -> None:
         """Remove expired entries"""
         async with self._lock:
-            expired_keys = [
-                key for key, entry in self._cache.items() if entry.is_expired()
-            ]
+            expired_keys = [key for key, entry in self._cache.items() if entry.is_expired()]
 
             for key in expired_keys:
                 entry = self._cache.pop(key)
@@ -335,9 +331,7 @@ class ResponseCache:
         # Use SHA256 hash for key
         return hashlib.sha256(key_str.encode()).hexdigest()
 
-    async def get_response(
-        self, client_id: str, tool: str, args: Dict[str, Any]
-    ) -> Optional[Any]:
+    async def get_response(self, client_id: str, tool: str, args: Dict[str, Any]) -> Optional[Any]:
         """
         Get cached response.
 
@@ -379,9 +373,7 @@ class ResponseCache:
                 self._client_keys[client_id] = set()
             self._client_keys[client_id].add(key)
 
-    async def invalidate(
-        self, client_id: str, tool: str, args: Dict[str, Any]
-    ) -> bool:
+    async def invalidate(self, client_id: str, tool: str, args: Dict[str, Any]) -> bool:
         """
         Invalidate cached response.
 

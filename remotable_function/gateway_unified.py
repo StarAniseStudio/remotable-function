@@ -52,7 +52,7 @@ class Gateway:
         require_auth: Optional[bool] = None,
         enable_cache: Optional[bool] = None,
         enable_compression: Optional[bool] = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize Gateway with flexible configuration.
@@ -106,7 +106,7 @@ class Gateway:
         if self.config.performance.enable_cache:
             self.cache = ResponseCache(
                 max_size=self.config.performance.cache_max_size,
-                default_ttl=self.config.performance.cache_ttl
+                default_ttl=self.config.performance.cache_ttl,
             )
 
         self.compressor = None
@@ -124,7 +124,7 @@ class Gateway:
             "client_connected": [],
             "client_disconnected": [],
             "tool_called": [],
-            "error": []
+            "error": [],
         }
 
         # Setup logging
@@ -140,7 +140,9 @@ class Gateway:
             # Display startup info
             auth_status = "enabled" if self.config.security.require_auth else "disabled"
             logger.info(f"Starting Gateway v2.0 on {self.host}:{self.port}")
-            logger.info(f"Configuration: auth={auth_status}, cache={self.config.performance.enable_cache}, compression={self.config.performance.enable_compression}")
+            logger.info(
+                f"Configuration: auth={auth_status}, cache={self.config.performance.enable_cache}, compression={self.config.performance.enable_compression}"
+            )
 
             # Security warning
             if not self.config.security.require_auth:
@@ -153,7 +155,7 @@ class Gateway:
                 self.port,
                 max_size=self.config.security.max_message_size,
                 ping_interval=self.config.network.ping_interval,
-                ping_timeout=self.config.network.ping_timeout
+                ping_timeout=self.config.network.ping_timeout,
             )
 
             self._running = True
@@ -194,7 +196,7 @@ class Gateway:
         """Handle incoming client connection."""
         # Handle both old and new websockets API
         if path is None:
-            path = websocket.path if hasattr(websocket, 'path') else '/'
+            path = websocket.path if hasattr(websocket, "path") else "/"
 
         client_id = None
 
@@ -214,7 +216,9 @@ class Gateway:
                 token = auth.get("token")
 
                 if token != self.config.security.auth_token:
-                    await self._send_error(websocket, "Authentication failed", data.get("id"), code=-32001)
+                    await self._send_error(
+                        websocket, "Authentication failed", data.get("id"), code=-32001
+                    )
                     return
 
             # Extract client info
@@ -224,13 +228,14 @@ class Gateway:
 
             # Create client info from params
             from .core.types import ClientInfo
+
             client_info = ClientInfo(
                 client_id=client_id,
                 name=params.get("name", "unknown"),
                 version=params.get("version", "1.0.0"),
                 platform=params.get("platform", "unknown"),
                 capabilities=params.get("capabilities", []),
-                metadata=params
+                metadata=params,
             )
 
             # Register connection
@@ -238,6 +243,7 @@ class Gateway:
 
             # Register tools
             from .core.types import ToolDefinition, ParameterSchema
+
             for tool_data in tools:
                 # Convert tool data to ToolDefinition
                 if isinstance(tool_data, dict):
@@ -249,33 +255,37 @@ class Gateway:
                         name=tool_name,  # Keep full name for now
                         description=tool_data.get("description", ""),
                         namespace=client_id,
-                        parameters=[ParameterSchema.from_dict(p) for p in tool_data.get("parameters", [])],
+                        parameters=[
+                            ParameterSchema.from_dict(p) for p in tool_data.get("parameters", [])
+                        ],
                         permissions=tool_data.get("permissions", []),
                         tags=tool_data.get("tags", []),
-                        timeout=tool_data.get("timeout", 30)
+                        timeout=tool_data.get("timeout", 30),
                     )
                 else:
                     # If it's a string, create a basic tool definition
                     tool_def = ToolDefinition(
-                        name=str(tool_data),
-                        description="",
-                        namespace=client_id
+                        name=str(tool_data), description="", namespace=client_id
                     )
 
                 # Register with client_id for tracking
                 self.registry.register(tool_def, client_id=client_id)
 
             # Send success response
-            await websocket.send(json.dumps({
-                "jsonrpc": "2.0",
-                "result": {
-                    "status": "registered",
-                    "client_id": client_id,
-                    "timestamp": datetime.now().isoformat(),
-                    "version": "2.0.0"
-                },
-                "id": data.get("id")
-            }))
+            await websocket.send(
+                json.dumps(
+                    {
+                        "jsonrpc": "2.0",
+                        "result": {
+                            "status": "registered",
+                            "client_id": client_id,
+                            "timestamp": datetime.now().isoformat(),
+                            "version": "2.0.0",
+                        },
+                        "id": data.get("id"),
+                    }
+                )
+            )
 
             logger.info(f"Client {client_id} connected with {len(tools)} tools")
             await self._emit("client_connected", client_id, tools)
@@ -334,57 +344,58 @@ class Gateway:
 
         try:
             # Look for server-side tool
-            server_tools = getattr(self, '_server_tools', {})
+            server_tools = getattr(self, "_server_tools", {})
             tool_instance = server_tools.get(tool_name)
 
             if not tool_instance:
                 # Send error response
-                await connection.websocket.send(json.dumps({
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "error": {
-                        "code": RPCErrorCode.TOOL_NOT_FOUND,
-                        "message": f"Tool '{tool_name}' not found"
-                    }
-                }))
+                await connection.websocket.send(
+                    json.dumps(
+                        {
+                            "jsonrpc": "2.0",
+                            "id": request_id,
+                            "error": {
+                                "code": RPCErrorCode.TOOL_NOT_FOUND,
+                                "message": f"Tool '{tool_name}' not found",
+                            },
+                        }
+                    )
+                )
                 return
 
             # Execute the tool
             from .core.types import ToolContext
+
             context = ToolContext(
-                client_id=client_id,
-                request_id=request_id,
-                timestamp=datetime.now(),
-                metadata={}
+                client_id=client_id, request_id=request_id, timestamp=datetime.now(), metadata={}
             )
 
             result = await tool_instance.execute(context, **args)
 
             # Send success response
-            await connection.websocket.send(json.dumps({
-                "jsonrpc": "2.0",
-                "id": request_id,
-                "result": result
-            }))
+            await connection.websocket.send(
+                json.dumps({"jsonrpc": "2.0", "id": request_id, "result": result})
+            )
 
         except Exception as e:
             # Send error response
             logger.error(f"Tool execution error: {e}")
-            await connection.websocket.send(json.dumps({
-                "jsonrpc": "2.0",
-                "id": request_id,
-                "error": {
-                    "code": RPCErrorCode.TOOL_EXECUTION_FAILED,
-                    "message": str(e)
-                }
-            }))
+            await connection.websocket.send(
+                json.dumps(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": request_id,
+                        "error": {"code": RPCErrorCode.TOOL_EXECUTION_FAILED, "message": str(e)},
+                    }
+                )
+            )
 
     async def call_tool(
         self,
         client_id: str,
         tool: str,
         args: Optional[Dict[str, Any]] = None,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
     ) -> Any:
         """
         Call a tool on a remote client.
@@ -421,6 +432,7 @@ class Gateway:
         cache_key = None
         if self.cache and "cacheable" in tool_def.tags:
             import hashlib
+
             cache_key = hashlib.md5(
                 f"{client_id}:{tool}:{json.dumps(args or {}, sort_keys=True)}".encode()
             ).hexdigest()
@@ -432,12 +444,7 @@ class Gateway:
 
         # Create request
         request = RPCRequest(
-            method="tool.execute",
-            params={
-                "tool": tool,
-                "args": args or {}
-            },
-            id=str(uuid.uuid4())
+            method="tool.execute", params={"tool": tool, "args": args or {}}, id=str(uuid.uuid4())
         )
 
         # Send request
@@ -482,7 +489,7 @@ class Gateway:
         return {
             client_id: {
                 "tools": [t.name for t in self.registry.list_by_client(client_id)],
-                "connected": True
+                "connected": True,
             }
             for client_id in self.manager.list_clients()
         }
@@ -502,10 +509,7 @@ class Gateway:
             client = tool.namespace
             if client not in tools_by_client:
                 tools_by_client[client] = []
-            tools_by_client[client].append({
-                "name": tool.name,
-                "description": tool.description
-            })
+            tools_by_client[client].append({"name": tool.name, "description": tool.description})
         return tools_by_client
 
     def is_running(self) -> bool:
@@ -525,6 +529,7 @@ class Gateway:
             def callback(...):
                 pass
         """
+
         def decorator(func):
             if event in self._callbacks:
                 self._callbacks[event].append(func)
@@ -553,16 +558,19 @@ class Gateway:
 
     # Helper methods
 
-    async def _send_error(self, websocket: WebSocketServerProtocol, message: str, request_id: Any = None, code: int = -32603) -> None:
+    async def _send_error(
+        self,
+        websocket: WebSocketServerProtocol,
+        message: str,
+        request_id: Any = None,
+        code: int = -32603,
+    ) -> None:
         """Send error response to client."""
-        await websocket.send(json.dumps({
-            "jsonrpc": "2.0",
-            "error": {
-                "code": code,
-                "message": message
-            },
-            "id": request_id
-        }))
+        await websocket.send(
+            json.dumps(
+                {"jsonrpc": "2.0", "error": {"code": code, "message": message}, "id": request_id}
+            )
+        )
 
     async def wait_closed(self) -> None:
         """Wait until gateway is closed."""
@@ -572,11 +580,9 @@ class Gateway:
 
 # Convenience functions for quick setup
 
+
 def create_gateway(
-    port: int = 8000,
-    auth_token: Optional[str] = None,
-    production: bool = False,
-    **kwargs
+    port: int = 8000, auth_token: Optional[str] = None, production: bool = False, **kwargs
 ) -> Gateway:
     """
     Create a gateway with common settings.
@@ -599,10 +605,7 @@ def create_gateway(
 
 
 async def start_server(
-    port: int = 8000,
-    auth_token: Optional[str] = None,
-    production: bool = False,
-    **kwargs
+    port: int = 8000, auth_token: Optional[str] = None, production: bool = False, **kwargs
 ) -> Gateway:
     """
     Quick start a server.

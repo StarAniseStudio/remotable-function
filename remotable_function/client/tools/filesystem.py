@@ -12,6 +12,7 @@ from pathlib import Path
 try:
     import aiofiles
     import aiofiles.os
+
     AIOFILES_AVAILABLE = True
 except ImportError:
     AIOFILES_AVAILABLE = False
@@ -35,9 +36,14 @@ class SecureFileSystemTool(Tool):
 
     # Default sensitive paths to block
     DEFAULT_DENY_PATHS = [
-        "/etc/passwd", "/etc/shadow", "/etc/sudoers",
-        "~/.ssh", "~/.aws", "~/.kube",
-        "/proc", "/sys",
+        "/etc/passwd",
+        "/etc/shadow",
+        "/etc/sudoers",
+        "~/.ssh",
+        "~/.aws",
+        "~/.kube",
+        "/proc",
+        "/sys",
     ]
 
     # Default file size limits
@@ -78,8 +84,12 @@ class SecureFileSystemTool(Tool):
 
         self.deny_paths = deny_paths if deny_paths is not None else self.DEFAULT_DENY_PATHS
         self.follow_symlinks = follow_symlinks
-        self.max_file_size = max_file_size if max_file_size is not None else self.DEFAULT_MAX_FILE_SIZE
-        self.max_write_size = max_write_size if max_write_size is not None else self.DEFAULT_MAX_WRITE_SIZE
+        self.max_file_size = (
+            max_file_size if max_file_size is not None else self.DEFAULT_MAX_FILE_SIZE
+        )
+        self.max_write_size = (
+            max_write_size if max_write_size is not None else self.DEFAULT_MAX_WRITE_SIZE
+        )
 
     def _validate_path(self, path: str) -> Path:
         """
@@ -433,9 +443,7 @@ class ListDirectoryTool(Tool):
                             file_size = file_stat.st_size
                         else:
                             file_size = os.path.getsize(item_path)
-                        files.append(
-                            {"name": item, "path": item_path, "size": file_size}
-                        )
+                        files.append({"name": item, "path": item_path, "size": file_size})
 
             return {
                 "path": normalized_path,
@@ -504,6 +512,7 @@ class DeleteFileTool(Tool):
                 if recursive:
                     # shutil.rmtree is synchronous, no async alternative in aiofiles
                     import shutil
+
                     shutil.rmtree(normalized_path)
                     item_type = "directory"
                 else:
@@ -529,6 +538,7 @@ class DeleteFileTool(Tool):
             raise Exception(f"Failed to delete: {e}")
         except Exception as e:
             raise Exception(f"Failed to delete: {e}")
+
 
 # Alias for backward compatibility
 FileSystemTool = SecureFileSystemTool

@@ -47,9 +47,7 @@ class AuthProvider(ABC):
         """
         pass
 
-    async def authorize(
-        self, identity: ClientIdentity, action: str, resource: str
-    ) -> bool:
+    async def authorize(self, identity: ClientIdentity, action: str, resource: str) -> bool:
         """
         Check if client is authorized to perform action on resource.
 
@@ -71,20 +69,14 @@ class NoAuthProvider(AuthProvider):
     async def authenticate(self, credentials: Dict[str, Any]) -> Optional[ClientIdentity]:
         """Accept all connections without authentication."""
         client_id = credentials.get("client_id", "unknown")
-        logger.warning(
-            f"NoAuthProvider: Accepting client {client_id} without authentication!"
-        )
-        return ClientIdentity(
-            client_id=client_id, authenticated=False, permissions={"*"}
-        )
+        logger.warning(f"NoAuthProvider: Accepting client {client_id} without authentication!")
+        return ClientIdentity(client_id=client_id, authenticated=False, permissions={"*"})
 
 
 class TokenAuthProvider(AuthProvider):
     """Simple token-based authentication."""
 
-    def __init__(
-        self, valid_tokens: Optional[Dict[str, ClientIdentity]] = None, **kwargs
-    ):
+    def __init__(self, valid_tokens: Optional[Dict[str, ClientIdentity]] = None, **kwargs):
         """
         Initialize token auth provider.
 
@@ -180,9 +172,7 @@ class PermissionBasedAuthProvider(AuthProvider):
         """Delegate to underlying auth provider."""
         return await self.auth_provider.authenticate(credentials)
 
-    async def authorize(
-        self, identity: ClientIdentity, action: str, resource: str
-    ) -> bool:
+    async def authorize(self, identity: ClientIdentity, action: str, resource: str) -> bool:
         """Check permissions."""
         if not identity.authenticated:
             return False
@@ -232,9 +222,7 @@ def create_token_auth(tokens: Optional[Dict[str, str]] = None) -> TokenAuthProvi
 
     if tokens:
         for client_id, token in tokens.items():
-            identity = ClientIdentity(
-                client_id=client_id, authenticated=True, permissions={"*"}
-            )
+            identity = ClientIdentity(client_id=client_id, authenticated=True, permissions={"*"})
             provider.add_token(token, identity)
 
     return provider
@@ -256,9 +244,7 @@ def create_api_key_auth(
 
     if keys:
         for client_id, api_key in keys.items():
-            identity = ClientIdentity(
-                client_id=client_id, authenticated=True, permissions={"*"}
-            )
+            identity = ClientIdentity(client_id=client_id, authenticated=True, permissions={"*"})
             provider.add_api_key(api_key, identity)
 
     return provider

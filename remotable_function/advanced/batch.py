@@ -21,9 +21,10 @@ logger = logging.getLogger(__name__)
 
 class BatchStrategy(Enum):
     """Batching strategies."""
-    TIME_BASED = "time_based"      # Batch by time window
-    SIZE_BASED = "size_based"      # Batch by request count
-    HYBRID = "hybrid"              # Combine time and size
+
+    TIME_BASED = "time_based"  # Batch by time window
+    SIZE_BASED = "size_based"  # Batch by request count
+    HYBRID = "hybrid"  # Combine time and size
 
 
 @dataclass
@@ -31,12 +32,12 @@ class BatchConfig:
     """Batch processing configuration."""
 
     strategy: BatchStrategy = BatchStrategy.HYBRID
-    max_batch_size: int = 50              # Maximum requests per batch
-    batch_timeout: float = 0.1            # Maximum wait time (100ms)
-    max_queue_size: int = 1000            # Maximum pending requests
-    enable_compression: bool = True       # Compress batch requests
-    enable_deduplication: bool = True     # Deduplicate identical requests
-    parallel_execution: bool = True       # Execute batch items in parallel
+    max_batch_size: int = 50  # Maximum requests per batch
+    batch_timeout: float = 0.1  # Maximum wait time (100ms)
+    max_queue_size: int = 1000  # Maximum pending requests
+    enable_compression: bool = True  # Compress batch requests
+    enable_deduplication: bool = True  # Deduplicate identical requests
+    parallel_execution: bool = True  # Execute batch items in parallel
 
 
 @dataclass
@@ -270,9 +271,8 @@ class BatchProcessor:
             duration = time.time() - start_time
             self._stats.total_latency += duration
             self._stats.avg_batch_size = (
-                (self._stats.avg_batch_size * (self._stats.batches_processed - 1) + len(batch))
-                / self._stats.batches_processed
-            )
+                self._stats.avg_batch_size * (self._stats.batches_processed - 1) + len(batch)
+            ) / self._stats.batches_processed
 
         except Exception as e:
             logger.error(f"Batch send error: {e}")
@@ -299,13 +299,11 @@ class BatchProcessor:
             if batch:
                 await self._process_batch(batch)
 
-    def get_stats(self) -> 'BatchStats':
+    def get_stats(self) -> "BatchStats":
         """Get batch processing statistics."""
         self._stats.queue_size = len(self._queue)
         if self._stats.batches_processed > 0:
-            self._stats.avg_latency = (
-                self._stats.total_latency / self._stats.batches_processed
-            )
+            self._stats.avg_latency = self._stats.total_latency / self._stats.batches_processed
         return self._stats
 
 
@@ -342,13 +340,7 @@ class RequestAggregator:
         self._pending: Dict[str, List[asyncio.Future]] = {}
         self._lock = asyncio.Lock()
 
-    async def aggregate(
-        self,
-        key: str,
-        func: Callable,
-        *args,
-        **kwargs
-    ) -> Any:
+    async def aggregate(self, key: str, func: Callable, *args, **kwargs) -> Any:
         """
         Aggregate request with others.
 
@@ -372,19 +364,11 @@ class RequestAggregator:
                 self._pending[key] = [future]
 
                 # Schedule execution
-                asyncio.create_task(
-                    self._execute_aggregated(key, func, *args, **kwargs)
-                )
+                asyncio.create_task(self._execute_aggregated(key, func, *args, **kwargs))
 
         return await future
 
-    async def _execute_aggregated(
-        self,
-        key: str,
-        func: Callable,
-        *args,
-        **kwargs
-    ) -> None:
+    async def _execute_aggregated(self, key: str, func: Callable, *args, **kwargs) -> None:
         """Execute aggregated request."""
         # Wait for aggregation window
         await asyncio.sleep(self.window_ms / 1000.0)

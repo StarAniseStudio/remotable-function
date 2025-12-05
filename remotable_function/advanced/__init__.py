@@ -40,19 +40,16 @@ __all__ = [
     "ConnectionPoolManager",
     "PoolConfig",
     "PoolStats",
-
     # Batch
     "BatchProcessor",
     "BatchConfig",
     "BatchStrategy",
     "RequestAggregator",
-
     # Serialization
     "FastSerializer",
     "SerializationFormat",
     "SerializationConfig",
     "BinaryProtocol",
-
     # Clients
     "PooledClient",
     "MultiGatewayClient",

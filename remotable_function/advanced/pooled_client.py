@@ -102,9 +102,7 @@ class PooledClient(Client):
             }
 
             self._pool = await self._pool_manager.get_pool(
-                self.server_url,
-                self.pool_config,
-                **connect_kwargs
+                self.server_url, self.pool_config, **connect_kwargs
             )
 
             # Register with first connection
@@ -213,10 +211,7 @@ class PooledClient(Client):
         )
 
         if timeout:
-            response = await asyncio.wait_for(
-                self._send_request(request),
-                timeout=timeout
-            )
+            response = await asyncio.wait_for(self._send_request(request), timeout=timeout)
         else:
             response = await self._send_request(request)
 
@@ -379,27 +374,19 @@ class MultiGatewayClient:
             for gateway_id, client in self._gateways.items()
         }
 
-        results = await asyncio.gather(
-            *tasks.values(),
-            return_exceptions=True
-        )
+        results = await asyncio.gather(*tasks.values(), return_exceptions=True)
 
-        return {
-            gateway_id: result
-            for gateway_id, result in zip(tasks.keys(), results)
-        }
+        return {gateway_id: result for gateway_id, result in zip(tasks.keys(), results)}
 
     async def disconnect_all(self) -> None:
         """Disconnect from all gateways."""
         await asyncio.gather(
-            *[client.disconnect() for client in self._gateways.values()],
-            return_exceptions=True
+            *[client.disconnect() for client in self._gateways.values()], return_exceptions=True
         )
         self._gateways.clear()
 
     def get_stats(self) -> Dict[str, Dict[str, Any]]:
         """Get statistics for all gateways."""
         return {
-            gateway_id: client.get_pool_stats()
-            for gateway_id, client in self._gateways.items()
+            gateway_id: client.get_pool_stats() for gateway_id, client in self._gateways.items()
         }

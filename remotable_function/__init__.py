@@ -30,14 +30,20 @@ try:
 except ImportError:
     # Provide stubs if config not available
     class GatewayConfig:
-        def __init__(self): pass
+        def __init__(self):
+            pass
+
         @classmethod
-        def production(cls): return cls()
+        def production(cls):
+            return cls()
 
     class ClientConfig:
-        def __init__(self): pass
+        def __init__(self):
+            pass
+
         @classmethod
-        def from_url(cls, url): return cls()
+        def from_url(cls, url):
+            return cls()
 
     class ConnectionState:
         DISCONNECTED = "disconnected"
@@ -46,9 +52,11 @@ except ImportError:
         RECONNECTING = "reconnecting"
         FAILED = "failed"
 
+
 # Built-in tools
 from .client.tools.filesystem import FileSystemTool
 from .client.tools.shell import ShellTool
+
 # Note: SystemInfoTool, NetworkTool, ProcessTool not yet implemented
 
 # Essential types only
@@ -62,21 +70,17 @@ __all__ = [
     "Gateway",
     "Client",
     "Tool",
-
     # Convenience functions (4)
     "create_gateway",
     "run_gateway",
     "create_client",
     "run_client",
-
     # Configuration (2)
     "GatewayConfig",
     "ClientConfig",
-
     # Built-in tools (2 available currently)
     "FileSystemTool",
     "ShellTool",
-
     # Types (3)
     "ToolDefinition",
     "ToolParameter",
@@ -98,9 +102,7 @@ async def start_server(port: int = 8000, auth_token: str = None) -> Gateway:
 
 
 async def connect_client(
-    server_url: str = "ws://localhost:8000",
-    tools: list = None,
-    auth_token: str = None
+    server_url: str = "ws://localhost:8000", tools: list = None, auth_token: str = None
 ) -> Client:
     """
     Quick connect a client.
@@ -169,10 +171,12 @@ def configure(role: Literal["server", "client"], **kwargs) -> None:
         "remotable.configure() is deprecated and no longer required. "
         "Simply import classes directly: from remotable import Gateway, Client",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
 
-    print(f"✓ Remotable configured as {role.upper()} (configure() is deprecated, direct imports are now recommended)")
+    print(
+        f"✓ Remotable configured as {role.upper()} (configure() is deprecated, direct imports are now recommended)"
+    )
 
 
 def get_role() -> str:
@@ -220,7 +224,7 @@ def __getattr__(name: str):
             f"Dynamic import of '{name}' via configure() is deprecated. "
             f"Use direct import instead: from remotable import {name}",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
 
     # 未找到

@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class SerializationFormat(Enum):
     """Serialization formats."""
+
     JSON = "json"
     MSGPACK = "msgpack"
     PICKLE = "pickle"
@@ -108,6 +109,7 @@ class FastSerializer:
         # Compress if needed
         if self.config.enable_compression and len(data) > self.config.compression_threshold:
             import zlib
+
             data = b"C" + zlib.compress(data, level=6)  # Prefix with 'C' for compressed
 
         # Cache result
@@ -133,6 +135,7 @@ class FastSerializer:
         # Decompress if needed
         if data.startswith(b"C"):
             import zlib
+
             data = zlib.decompress(data[1:])
 
         # Auto-detect format if not specified
@@ -159,11 +162,11 @@ class FastSerializer:
     def _detect_format_from_bytes(self, data: bytes) -> SerializationFormat:
         """Detect format from serialized bytes."""
         # Check for JSON
-        if data.startswith(b'{') or data.startswith(b'['):
+        if data.startswith(b"{") or data.startswith(b"["):
             return SerializationFormat.JSON
 
         # Check for msgpack
-        if len(data) > 0 and data[0] in (0x90, 0x91, 0x92, 0x93, 0xdc, 0xdd, 0xde):
+        if len(data) > 0 and data[0] in (0x90, 0x91, 0x92, 0x93, 0xDC, 0xDD, 0xDE):
             return SerializationFormat.MSGPACK
 
         # Default to pickle
@@ -193,11 +196,11 @@ class FastSerializer:
 
     def _serialize_json(self, obj: Any) -> bytes:
         """Serialize using JSON."""
-        return json.dumps(obj, separators=(',', ':')).encode('utf-8')
+        return json.dumps(obj, separators=(",", ":")).encode("utf-8")
 
     def _deserialize_json(self, data: bytes) -> Any:
         """Deserialize JSON."""
-        return json.loads(data.decode('utf-8'))
+        return json.loads(data.decode("utf-8"))
 
     def _serialize_msgpack(self, obj: Any) -> bytes:
         """Serialize using msgpack."""
@@ -229,8 +232,11 @@ class FastSerializer:
             "cache_hits": self._cache_hits,
             "cache_misses": self._cache_misses,
             "cache_size": len(self._cache),
-            "hit_rate": self._cache_hits / (self._cache_hits + self._cache_misses)
-            if (self._cache_hits + self._cache_misses) > 0 else 0.0,
+            "hit_rate": (
+                self._cache_hits / (self._cache_hits + self._cache_misses)
+                if (self._cache_hits + self._cache_misses) > 0
+                else 0.0
+            ),
         }
 
 
@@ -270,7 +276,7 @@ class StreamSerializer:
             stream.write(packed)
         elif format == SerializationFormat.JSON:
             json_str = json.dumps(obj)
-            stream.write(json_str.encode('utf-8'))
+            stream.write(json_str.encode("utf-8"))
         else:
             pickle.dump(obj, stream, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -293,7 +299,7 @@ class StreamSerializer:
             unpacker = msgpack.Unpacker(stream, raw=False)
             return next(unpacker)
         elif format == SerializationFormat.JSON:
-            data = stream.read().decode('utf-8')
+            data = stream.read().decode("utf-8")
             return json.loads(data)
         else:
             return pickle.load(stream)
@@ -339,6 +345,7 @@ class BinaryProtocol:
         flags = 0
         if compress and len(payload) > 100:
             import zlib
+
             compressed = zlib.compress(payload, level=6)
             if len(compressed) < len(payload):
                 payload = compressed
@@ -348,7 +355,7 @@ class BinaryProtocol:
         header = struct.pack(
             self.HEADER_FORMAT,
             self.VERSION,
-            format.value.encode('utf-8')[0],  # First char of format
+            format.value.encode("utf-8")[0],  # First char of format
             flags,
             len(payload),
         )
@@ -369,25 +376,26 @@ class BinaryProtocol:
             raise ValueError("Invalid message: too short")
 
         # Parse header
-        header = data[:self.HEADER_SIZE]
+        header = data[: self.HEADER_SIZE]
         version, format_byte, flags, length = struct.unpack(self.HEADER_FORMAT, header)
 
         if version != self.VERSION:
             raise ValueError(f"Unsupported protocol version: {version}")
 
         # Extract payload
-        payload = data[self.HEADER_SIZE:self.HEADER_SIZE + length]
+        payload = data[self.HEADER_SIZE : self.HEADER_SIZE + length]
 
         # Decompress if needed
         if flags & self.FLAG_COMPRESSED:
             import zlib
+
             payload = zlib.decompress(payload)
 
         # Detect format
         format_map = {
-            ord('j'): SerializationFormat.JSON,
-            ord('m'): SerializationFormat.MSGPACK,
-            ord('p'): SerializationFormat.PICKLE,
+            ord("j"): SerializationFormat.JSON,
+            ord("m"): SerializationFormat.MSGPACK,
+            ord("p"): SerializationFormat.PICKLE,
         }
         format = format_map.get(format_byte, SerializationFormat.JSON)
 

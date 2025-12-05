@@ -143,18 +143,14 @@ class TokenBucketRateLimiter(RateLimiter):
 
         # Get or create bucket for this key
         if key not in self._buckets:
-            self._buckets[key] = self.Bucket(
-                tokens=float(self.config.burst_size), last_refill=now
-            )
+            self._buckets[key] = self.Bucket(tokens=float(self.config.burst_size), last_refill=now)
 
         bucket = self._buckets[key]
 
         # Refill tokens based on time elapsed
         time_elapsed = now - bucket.last_refill
         tokens_to_add = time_elapsed * self.refill_rate
-        bucket.tokens = min(
-            self.config.burst_size, bucket.tokens + tokens_to_add
-        )
+        bucket.tokens = min(self.config.burst_size, bucket.tokens + tokens_to_add)
         bucket.last_refill = now
 
         # Check if we have tokens available
@@ -167,9 +163,7 @@ class TokenBucketRateLimiter(RateLimiter):
                 f"Max {self.config.requests_per_window} requests per "
                 f"{self.config.window_seconds}s. Retry after {retry_after}s."
             )
-            logger.warning(
-                f"Rate limit exceeded for {key}: {bucket.tokens:.2f} tokens"
-            )
+            logger.warning(f"Rate limit exceeded for {key}: {bucket.tokens:.2f} tokens")
             return False, error_message
 
         # Consume one token

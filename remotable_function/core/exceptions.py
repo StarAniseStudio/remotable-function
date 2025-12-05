@@ -32,24 +32,20 @@ class RemotableError(Exception):
 
 class ConnectionError(RemotableError):
     """Connection-related errors."""
+
     pass
 
 
 class AuthenticationError(RemotableError):
     """Authentication/authorization errors."""
+
     pass
 
 
 class ValidationError(RemotableError):
     """Parameter/data validation errors."""
 
-    def __init__(
-        self,
-        message: str,
-        parameter: Optional[str] = None,
-        value: Any = None,
-        **kwargs
-    ):
+    def __init__(self, message: str, parameter: Optional[str] = None, value: Any = None, **kwargs):
         """
         Initialize validation error.
 
@@ -70,12 +66,7 @@ class ValidationError(RemotableError):
 class ToolError(RemotableError):
     """Tool execution errors."""
 
-    def __init__(
-        self,
-        message: str,
-        tool_name: Optional[str] = None,
-        **kwargs
-    ):
+    def __init__(self, message: str, tool_name: Optional[str] = None, **kwargs):
         """
         Initialize tool error.
 
@@ -92,12 +83,7 @@ class ToolError(RemotableError):
 class TimeoutError(RemotableError):
     """Operation timeout errors."""
 
-    def __init__(
-        self,
-        message: str,
-        timeout: Optional[float] = None,
-        **kwargs
-    ):
+    def __init__(self, message: str, timeout: Optional[float] = None, **kwargs):
         """
         Initialize timeout error.
 
@@ -119,7 +105,7 @@ class RateLimitError(RemotableError):
         message: str,
         limit: Optional[int] = None,
         retry_after: Optional[float] = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize rate limit error.
@@ -140,9 +126,11 @@ class RateLimitError(RemotableError):
 
 class ConfigurationError(RemotableError):
     """Configuration errors."""
+
     pass
 
 
 class SecurityError(RemotableError):
     """Security-related errors."""
+
     pass

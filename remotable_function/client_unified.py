@@ -48,7 +48,7 @@ class Client:
         client_id: Optional[str] = None,
         auth_token: Optional[str] = None,
         auto_reconnect: Optional[bool] = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize Client with flexible configuration.
@@ -77,12 +77,12 @@ class Client:
                 config.auto_reconnect = auto_reconnect
 
             # Process additional kwargs for backward compatibility
-            if 'reconnect_max_attempts' in kwargs:
-                config.network.reconnect_max_attempts = kwargs['reconnect_max_attempts']
-            if 'reconnect_interval' in kwargs:
+            if "reconnect_max_attempts" in kwargs:
+                config.network.reconnect_max_attempts = kwargs["reconnect_max_attempts"]
+            if "reconnect_interval" in kwargs:
                 # Deprecated parameter - map to reconnect_base_delay
-                config.network.reconnect_base_delay = float(kwargs['reconnect_interval'])
-            if 'version' in kwargs:
+                config.network.reconnect_base_delay = float(kwargs["reconnect_interval"])
+            if "version" in kwargs:
                 # Store version if provided (for backward compatibility)
                 pass  # Version is typically informational
 
@@ -125,7 +125,7 @@ class Client:
             "tool_executed": [],  # 工具执行后的 hook (保持向后兼容)
             "after_tool_execute": [],  # 工具执行后的 hook (别名)
             "tool_error": [],  # 工具执行失败的 hook
-            "error": []
+            "error": [],
         }
 
         # Setup logging
@@ -190,7 +190,7 @@ class Client:
                 self._websocket = None
 
             # Cancel any existing background tasks before reconnecting
-            if hasattr(self, '_receive_task') and self._receive_task:
+            if hasattr(self, "_receive_task") and self._receive_task:
                 self._receive_task.cancel()
                 try:
                     await self._receive_task
@@ -198,7 +198,7 @@ class Client:
                     pass
                 self._receive_task = None
 
-            if hasattr(self, '_heartbeat_task') and self._heartbeat_task:
+            if hasattr(self, "_heartbeat_task") and self._heartbeat_task:
                 self._heartbeat_task.cancel()
                 try:
                     await self._heartbeat_task
@@ -211,7 +211,7 @@ class Client:
                 self.config.server_url,
                 max_size=self.config.security.max_message_size,
                 ping_interval=None,  # We handle our own heartbeat
-                ping_timeout=None
+                ping_timeout=None,
             )
 
             # Send registration
@@ -285,15 +285,15 @@ class Client:
             }
 
             # Add parameters
-            if hasattr(tool, 'parameters') and tool.parameters:
+            if hasattr(tool, "parameters") and tool.parameters:
                 tool_def["parameters"] = [p.to_dict() for p in tool.parameters]
 
             # Add optional metadata
-            if hasattr(tool, 'permissions') and tool.permissions:
+            if hasattr(tool, "permissions") and tool.permissions:
                 tool_def["permissions"] = tool.permissions
-            if hasattr(tool, 'tags') and tool.tags:
+            if hasattr(tool, "tags") and tool.tags:
                 tool_def["tags"] = tool.tags
-            if hasattr(tool, 'timeout'):
+            if hasattr(tool, "timeout"):
                 tool_def["timeout"] = tool.timeout
 
             tools.append(tool_def)
@@ -302,19 +302,13 @@ class Client:
         registration = {
             "jsonrpc": "2.0",
             "method": "register",
-            "params": {
-                "client_id": self.client_id,
-                "tools": tools,
-                "version": "2.0.0"
-            },
-            "id": str(uuid.uuid4())
+            "params": {"client_id": self.client_id, "tools": tools, "version": "2.0.0"},
+            "id": str(uuid.uuid4()),
         }
 
         # Add authentication if configured
         if self.config.security.auth_token:
-            registration["params"]["auth"] = {
-                "token": self.config.security.auth_token
-            }
+            registration["params"]["auth"] = {"token": self.config.security.auth_token}
 
         # Send registration
         await self._websocket.send(json.dumps(registration))
@@ -372,11 +366,9 @@ class Client:
 
             # Ping/heartbeat
             elif method == "ping":
-                await self._websocket.send(json.dumps({
-                    "jsonrpc": "2.0",
-                    "result": "pong",
-                    "id": data.get("id")
-                }))
+                await self._websocket.send(
+                    json.dumps({"jsonrpc": "2.0", "result": "pong", "id": data.get("id")})
+                )
 
             # Unknown method
             else:
@@ -387,14 +379,15 @@ class Client:
 
             # Send error response if request had ID
             if "id" in data:
-                await self._websocket.send(json.dumps({
-                    "jsonrpc": "2.0",
-                    "error": {
-                        "code": -32603,
-                        "message": str(e)
-                    },
-                    "id": data["id"]
-                }))
+                await self._websocket.send(
+                    json.dumps(
+                        {
+                            "jsonrpc": "2.0",
+                            "error": {"code": -32603, "message": str(e)},
+                            "id": data["id"],
+                        }
+                    )
+                )
 
     async def _execute_tool_v2(self, request: Dict[str, Any]) -> None:
         """Execute tool using v2.0 protocol format."""
@@ -411,11 +404,9 @@ class Client:
 
             # Create context
             from remotable_function.core.types import ToolContext
+
             context = ToolContext(
-                client_id=self.client_id,
-                request_id=request_id,
-                timestamp=0,
-                metadata={}
+                client_id=self.client_id, request_id=request_id, timestamp=0, metadata={}
             )
 
             # 🪝 Emit before_tool_execute hook
@@ -431,11 +422,7 @@ class Client:
                 result = await loop.run_in_executor(None, lambda: tool.execute(context, **args))
 
             # Send success response
-            response = {
-                "jsonrpc": "2.0",
-                "result": result,
-                "id": request_id
-            }
+            response = {"jsonrpc": "2.0", "result": result, "id": request_id}
 
             await self._websocket.send(json.dumps(response))
 
@@ -447,16 +434,15 @@ class Client:
             logger.error(f"Tool execution error ({tool_name}): {e}")
 
             # 🪝 Emit tool_error hook
-            await self._emit("tool_error", tool_name, args, e, context if 'context' in locals() else None)
+            await self._emit(
+                "tool_error", tool_name, args, e, context if "context" in locals() else None
+            )
 
             # Send error response
             response = {
                 "jsonrpc": "2.0",
-                "error": {
-                    "code": -32603,
-                    "message": str(e)
-                },
-                "id": request_id
+                "error": {"code": -32603, "message": str(e)},
+                "id": request_id,
             }
 
             await self._websocket.send(json.dumps(response))
@@ -472,11 +458,9 @@ class Client:
 
             # Create context for v1.x format
             from remotable_function.core.types import ToolContext
+
             context = ToolContext(
-                client_id=self.client_id,
-                request_id=request_id,
-                timestamp=0,
-                metadata={}
+                client_id=self.client_id, request_id=request_id, timestamp=0, metadata={}
             )
 
             # 🪝 Emit before_tool_execute hook
@@ -491,11 +475,7 @@ class Client:
                 result = await loop.run_in_executor(None, tool.execute, **params)
 
             # Send success response
-            response = {
-                "jsonrpc": "2.0",
-                "result": result,
-                "id": request_id
-            }
+            response = {"jsonrpc": "2.0", "result": result, "id": request_id}
 
             # 🪝 Emit after_tool_execute hooks
             await self._emit("tool_executed", method, params, result)  # 向后兼容
@@ -505,16 +485,15 @@ class Client:
             logger.error(f"Tool execution error: {e}")
 
             # 🪝 Emit tool_error hook
-            await self._emit("tool_error", method, params, e, context if 'context' in locals() else None)
+            await self._emit(
+                "tool_error", method, params, e, context if "context" in locals() else None
+            )
 
             # Send error response
             response = {
                 "jsonrpc": "2.0",
-                "error": {
-                    "code": -32603,
-                    "message": str(e)
-                },
-                "id": request_id
+                "error": {"code": -32603, "message": str(e)},
+                "id": request_id,
             }
 
         await self._websocket.send(json.dumps(response))
@@ -549,7 +528,7 @@ class Client:
                     "jsonrpc": "2.0",
                     "method": "heartbeat",
                     "params": {"client_id": self.client_id},
-                    "id": str(uuid.uuid4())
+                    "id": str(uuid.uuid4()),
                 }
                 await self._websocket.send(json.dumps(heartbeat))
 
@@ -579,7 +558,7 @@ class Client:
         jitter = self.config.network.reconnect_jitter
 
         # Exponential backoff
-        delay = base_delay * (multiplier ** self._reconnect_attempts)
+        delay = base_delay * (multiplier**self._reconnect_attempts)
 
         # Cap at maximum delay
         delay = min(delay, max_delay)
@@ -610,11 +589,14 @@ class Client:
             )
 
             # Emit reconnecting event
-            await self._emit("reconnecting", {
-                "attempt": self._reconnect_attempts,
-                "wait_time": wait_time,
-                "max_attempts": self.config.network.reconnect_max_attempts
-            })
+            await self._emit(
+                "reconnecting",
+                {
+                    "attempt": self._reconnect_attempts,
+                    "wait_time": wait_time,
+                    "max_attempts": self.config.network.reconnect_max_attempts,
+                },
+            )
 
             await asyncio.sleep(wait_time)
 
@@ -626,20 +608,19 @@ class Client:
 
             except Exception as e:
                 logger.error(f"Reconnection attempt {self._reconnect_attempts} failed: {e}")
-                await self._emit("reconnect_failed", {
-                    "attempt": self._reconnect_attempts,
-                    "error": str(e)
-                })
+                await self._emit(
+                    "reconnect_failed", {"attempt": self._reconnect_attempts, "error": str(e)}
+                )
 
         # Max attempts reached
         self._state = ConnectionState.FAILED
         logger.error(
             f"Max reconnection attempts ({self.config.network.reconnect_max_attempts}) reached"
         )
-        await self._emit("reconnect_stopped", {
-            "reason": "max_attempts_reached",
-            "attempts": self._reconnect_attempts
-        })
+        await self._emit(
+            "reconnect_stopped",
+            {"reason": "max_attempts_reached", "attempts": self._reconnect_attempts},
+        )
 
     # Event system
 
@@ -656,6 +637,7 @@ class Client:
 
         Supported events: connected, disconnected, tool_executed, error
         """
+
         def decorator(func):
             if event in self._callbacks:
                 self._callbacks[event].append(func)
@@ -697,11 +679,12 @@ class Client:
 
 # Convenience functions
 
+
 def create_client(
     server_url: str = "ws://localhost:8000",
     client_id: Optional[str] = None,
     auth_token: Optional[str] = None,
-    **kwargs
+    **kwargs,
 ) -> Client:
     """
     Create a client with common settings.
@@ -724,7 +707,7 @@ async def connect_client(
     server_url: str = "ws://localhost:8000",
     tools: Optional[List[Tool]] = None,
     auth_token: Optional[str] = None,
-    **kwargs
+    **kwargs,
 ) -> Client:
     """
     Quick connect a client with tools.

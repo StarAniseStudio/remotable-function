@@ -112,9 +112,7 @@ class MessageCompressor:
 
         # Check if compression is needed
         if not self.enable_compression or original_size < self.threshold:
-            logger.debug(
-                f"Skip compression (size={original_size}, threshold={self.threshold})"
-            )
+            logger.debug(f"Skip compression (size={original_size}, threshold={self.threshold})")
             return json_bytes, False
 
         # Compress
@@ -138,9 +136,7 @@ class MessageCompressor:
                 return compressed_bytes, True
             else:
                 # Compression didn't help, use original
-                logger.debug(
-                    f"Compression ineffective: {original_size} -> {compressed_size} bytes"
-                )
+                logger.debug(f"Compression ineffective: {original_size} -> {compressed_size} bytes")
                 return json_bytes, False
 
         except zlib.error as e:
@@ -207,6 +203,7 @@ class MessageCompressor:
         if was_compressed:
             # Return compressed message with metadata
             import base64
+
             return {
                 "compressed": True,
                 "data": base64.b64encode(data_bytes).decode("utf-8"),
@@ -230,6 +227,7 @@ class MessageCompressor:
         if isinstance(message, dict) and message.get("compressed"):
             # Decompress the message
             import base64
+
             data_bytes = base64.b64decode(message["data"])
             return self.decompress(data_bytes, compressed=True)
         else:

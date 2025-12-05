@@ -22,14 +22,14 @@ logger = logging.getLogger(__name__)
 class PoolConfig:
     """Connection pool configuration."""
 
-    min_size: int = 2                    # Minimum connections to maintain
-    max_size: int = 10                   # Maximum connections allowed
-    max_idle_time: float = 300.0         # Max idle time before closing (5 min)
-    acquire_timeout: float = 10.0        # Timeout for acquiring connection
-    connection_timeout: float = 10.0     # Timeout for creating connection
+    min_size: int = 2  # Minimum connections to maintain
+    max_size: int = 10  # Maximum connections allowed
+    max_idle_time: float = 300.0  # Max idle time before closing (5 min)
+    acquire_timeout: float = 10.0  # Timeout for acquiring connection
+    connection_timeout: float = 10.0  # Timeout for creating connection
     health_check_interval: float = 30.0  # Health check interval
-    max_retries: int = 3                 # Max retries for failed connections
-    retry_delay: float = 1.0             # Delay between retries
+    max_retries: int = 3  # Max retries for failed connections
+    retry_delay: float = 1.0  # Delay between retries
 
 
 @dataclass
@@ -40,7 +40,7 @@ class PooledConnection:
     created_at: float = field(default_factory=time.time)
     last_used: float = field(default_factory=time.time)
     use_count: int = 0
-    pool: Optional['ConnectionPool'] = None
+    pool: Optional["ConnectionPool"] = None
     in_use: bool = False
 
     def is_expired(self, max_idle_time: float) -> bool:
@@ -49,11 +49,7 @@ class PooledConnection:
 
     def is_healthy(self) -> bool:
         """Check if connection is healthy."""
-        return (
-            self.connection is not None and
-            not self.connection.closed and
-            self.connection.open
-        )
+        return self.connection is not None and not self.connection.closed and self.connection.open
 
     async def close(self) -> None:
         """Close the connection."""
@@ -72,12 +68,7 @@ class ConnectionPool:
             response = await conn.recv()
     """
 
-    def __init__(
-        self,
-        uri: str,
-        config: Optional[PoolConfig] = None,
-        **connect_kwargs
-    ):
+    def __init__(self, uri: str, config: Optional[PoolConfig] = None, **connect_kwargs):
         """
         Initialize connection pool.
 
@@ -158,7 +149,7 @@ class ConnectionPool:
             try:
                 conn = await asyncio.wait_for(
                     websockets.connect(self.uri, **self.connect_kwargs),
-                    timeout=self.config.connection_timeout
+                    timeout=self.config.connection_timeout,
                 )
                 pooled = PooledConnection(connection=conn, pool=self)
                 self._all_connections.add(pooled)
@@ -312,7 +303,7 @@ class ConnectionPool:
                     except Exception as e:
                         logger.warning(f"Failed to create connection during health check: {e}")
 
-    def get_stats(self) -> 'PoolStats':
+    def get_stats(self) -> "PoolStats":
         """Get pool statistics."""
         self._stats.available_connections = len(self._available)
         self._stats.in_use_connections = len(self._in_use)
@@ -364,10 +355,7 @@ class ConnectionPoolManager:
         self._lock = asyncio.Lock()
 
     async def get_pool(
-        self,
-        uri: str,
-        config: Optional[PoolConfig] = None,
-        **connect_kwargs
+        self, uri: str, config: Optional[PoolConfig] = None, **connect_kwargs
     ) -> ConnectionPool:
         """
         Get or create a connection pool for URI.

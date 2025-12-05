@@ -35,9 +35,7 @@ class ParameterValidator:
     """
 
     @staticmethod
-    def validate(
-        args: Dict[str, Any], schemas: List[ParameterSchema]
-    ) -> Dict[str, Any]:
+    def validate(args: Dict[str, Any], schemas: List[ParameterSchema]) -> Dict[str, Any]:
         """
         Validate parameters against schemas.
 
@@ -57,9 +55,7 @@ class ParameterValidator:
         # Check for required parameters
         for schema in schemas:
             if schema.required and schema.name not in args:
-                raise ValidationError(
-                    schema.name, f"Required parameter missing"
-                )
+                raise ValidationError(schema.name, f"Required parameter missing")
 
         # Validate each provided parameter
         for name, value in args.items():
@@ -71,9 +67,7 @@ class ParameterValidator:
             schema = schema_dict[name]
 
             # Validate type
-            validated[name] = ParameterValidator._validate_type(
-                name, value, schema
-            )
+            validated[name] = ParameterValidator._validate_type(name, value, schema)
 
             # Validate enum
             if schema.enum is not None:
@@ -95,11 +89,7 @@ class ParameterValidator:
 
         # Add default values for missing optional parameters
         for schema in schemas:
-            if (
-                not schema.required
-                and schema.name not in validated
-                and schema.default is not None
-            ):
+            if not schema.required and schema.name not in validated and schema.default is not None:
                 validated[schema.name] = schema.default
 
         return validated
@@ -122,9 +112,7 @@ class ParameterValidator:
                 try:
                     return int(value)
                 except (ValueError, TypeError):
-                    raise ValidationError(
-                        name, f"Expected integer, got {type(value).__name__}"
-                    )
+                    raise ValidationError(name, f"Expected integer, got {type(value).__name__}")
             return value
 
         elif param_type == ParameterType.NUMBER:
@@ -135,9 +123,7 @@ class ParameterValidator:
                 try:
                     return float(value)
                 except (ValueError, TypeError):
-                    raise ValidationError(
-                        name, f"Expected number, got {type(value).__name__}"
-                    )
+                    raise ValidationError(name, f"Expected number, got {type(value).__name__}")
             return value
 
         elif param_type == ParameterType.BOOLEAN:
@@ -149,23 +135,17 @@ class ParameterValidator:
                         return True
                     elif lower in ("false", "0", "no", "off"):
                         return False
-                raise ValidationError(
-                    name, f"Expected boolean, got {type(value).__name__}"
-                )
+                raise ValidationError(name, f"Expected boolean, got {type(value).__name__}")
             return value
 
         elif param_type == ParameterType.ARRAY:
             if not isinstance(value, list):
-                raise ValidationError(
-                    name, f"Expected array, got {type(value).__name__}"
-                )
+                raise ValidationError(name, f"Expected array, got {type(value).__name__}")
             return value
 
         elif param_type == ParameterType.OBJECT:
             if not isinstance(value, dict):
-                raise ValidationError(
-                    name, f"Expected object, got {type(value).__name__}"
-                )
+                raise ValidationError(name, f"Expected object, got {type(value).__name__}")
             return value
 
         else:
@@ -176,10 +156,7 @@ class ParameterValidator:
     def _validate_enum(name: str, value: Any, enum: List[Any]) -> Any:
         """Validate enum value."""
         if value not in enum:
-            raise ValidationError(
-                name,
-                f"Value must be one of {enum}, got '{value}'"
-            )
+            raise ValidationError(name, f"Value must be one of {enum}, got '{value}'")
         return value
 
     @staticmethod
@@ -188,13 +165,9 @@ class ParameterValidator:
     ) -> float:
         """Validate numeric range."""
         if min_value is not None and value < min_value:
-            raise ValidationError(
-                name, f"Value {value} is less than minimum {min_value}"
-            )
+            raise ValidationError(name, f"Value {value} is less than minimum {min_value}")
         if max_value is not None and value > max_value:
-            raise ValidationError(
-                name, f"Value {value} is greater than maximum {max_value}"
-            )
+            raise ValidationError(name, f"Value {value} is greater than maximum {max_value}")
         return value
 
     @staticmethod
@@ -202,9 +175,7 @@ class ParameterValidator:
         """Validate string pattern."""
         try:
             if not re.match(pattern, value):
-                raise ValidationError(
-                    name, f"Value '{value}' does not match pattern '{pattern}'"
-                )
+                raise ValidationError(name, f"Value '{value}' does not match pattern '{pattern}'")
         except re.error as e:
             logger.error(f"Invalid regex pattern '{pattern}': {e}")
             raise ValidationError(name, f"Invalid validation pattern")
@@ -212,9 +183,7 @@ class ParameterValidator:
 
 
 # Convenience function
-def validate_parameters(
-    args: Dict[str, Any], schemas: List[ParameterSchema]
-) -> Dict[str, Any]:
+def validate_parameters(args: Dict[str, Any], schemas: List[ParameterSchema]) -> Dict[str, Any]:
     """
     Validate parameters against schemas.
 
