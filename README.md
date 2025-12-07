@@ -6,6 +6,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-2.0.0-green.svg)](https://github.com/StarAniseStudio/remotable-function)
 
+> ⚠️ **AI-Generated Code**: This project was created with AI assistance. While functional, please review the code carefully and use at your own risk in production environments.
+
 ---
 
 ## What is Remotable Function?
